@@ -32,7 +32,10 @@ constraint forall(i in 2..Width-1, j in 2..Height-1 where outputgrid[i, j] >= 0)
   countMines(i, j) = outputgrid[i, j]
 );
 
-constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0) (
+constraint forall(i in {1,Width}, j in 1..Height where outputgrid[i, j] >= 0) (
+  countMines(i, j) <= outputgrid[i, j]
+);
+constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) (
   countMines(i, j) <= outputgrid[i, j]
 );
 
