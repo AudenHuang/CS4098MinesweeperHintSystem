@@ -17,6 +17,7 @@ constraint forall(i in 1..Width, j in 1..Height where grid[i, j] != -1) (
   outputgrid[i, j] = grid[i,j]
 );
 
+% Make sure that unreveale blocked are assigned with a valid solution
 constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -1) (
   outputgrid[i, j] in valid_unrevealed
 );
