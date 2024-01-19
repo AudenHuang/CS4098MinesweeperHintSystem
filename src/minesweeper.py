@@ -346,16 +346,21 @@ class Minesweeper:
                 if grid.is_show():
                     self.current_board[row][col] = grid.value
 
+     
         
-        mInput = np.zeros((7, 7))
-        
-  
-        for row in range(3,self.row_size-3):
-            for col in range(3,self.col_size-3):
+
+        for row in range(self.row_size):
+            for col in range(self.col_size):
                 if self.current_board[row][col]== -1:
-                    mInput= self.current_board[row-3:row+4,col-3:col+4].copy()
+                    mInput = np.full((7, 7), -3)
+                    start_r = max(0, row - 3)
+                    end_r = min(16, row + 4)
+                    start_c = max(0, col - 3)
+                    end_c = min(16, col + 4)
+                    mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
                     # isABomb
                     mInput[3][3] = -3 
+                    
                     
 
                     # Load MiniZinc models

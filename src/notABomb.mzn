@@ -3,7 +3,7 @@ int: Width = 7;
 int: Height = 7;
 
 % data from python
-array[1..Width, 1..Height] of -2..8: grid;
+array[1..Width, 1..Height] of -3..8: grid;
 
 
 % Decision variable for the output grid
@@ -13,13 +13,16 @@ array[1..Width, 1..Height] of var -2..8: outputgrid;
 set of -2..8: valid_unrevealed = {-2} union 0..8;
 
 % Set the values for the decision variable
-constraint forall(i in 1..Width, j in 1..Height where grid[i, j] != -1) (
+constraint forall(i in 1..Width, j in 1..Height where grid[i, j] != -1 /\ grid[i, j] != -3) (
   outputgrid[i, j] = grid[i,j]
 );
-
-% Make sure that unreveale blocked are assigned with a valid solution
 constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -1) (
   outputgrid[i, j] in valid_unrevealed
+);
+
+% Make sure that out of bound are set to not a bomb
+constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -3) (
+  outputgrid[i, j] in 0..8
 );
 
 % Count Mines

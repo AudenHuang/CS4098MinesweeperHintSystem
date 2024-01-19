@@ -22,8 +22,10 @@ constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -1) (
   outputgrid[i, j] in valid_unrevealed
 );
 
-% Set the targetting cell to not a bomb
-constraint outputgrid[4,4] in 0..8;
+% Make sure that out of bound and target are set to not a bomb
+constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -3) (
+  outputgrid[i, j] in 0..8
+);
 
 % Count Mines
 function var int: countMines(int: i, int: j) =
