@@ -138,7 +138,8 @@ class Minesweeper:
         for button in self.buttons:
             button.bind('<Button-1>', self.lclicked_wrapper(button))
             button.bind('<Button-3>', self.rclicked_wrapper(button))
-        print(self.current_board)
+        # for debug
+        # print(self.current_board)
 
     def init_random_mines(self):
         '''Initialize mines randomly.
@@ -331,7 +332,13 @@ class Minesweeper:
 
         return random.choice(buttons)
 
-
+    def has_shown_neighbour(self,r,c):
+        adjecent_grids = self.get_surrounding_buttons(r,c)
+        for grid in adjecent_grids:
+            if grid.is_show():
+                return True
+        return False
+        
 
     def hint(self):
         """Solve parts of the game bases on current board's information by using CSP.
@@ -345,13 +352,13 @@ class Minesweeper:
                 grid = self.board[row][col]
                 if grid.is_show():
                     self.current_board[row][col] = grid.value
-
-     
         
 
         for row in range(self.row_size):
             for col in range(self.col_size):
-                if self.current_board[row][col]== -1:
+                # for debug
+                # print(self.has_shown_neighbour(row,col))
+                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
                     mInput = np.full((7, 7), -3)
                     start_r = max(0, row - 3)
                     end_r = min(16, row + 4)
@@ -360,8 +367,6 @@ class Minesweeper:
                     mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
                     # isABomb
                     mInput[3][3] = -3 
-                    
-                    
 
                     # Load MiniZinc models
                     isABomb_model = Model("./isABomb.mzn")
@@ -375,12 +380,12 @@ class Minesweeper:
 
                     # Set input data (mInput) for both instances
                     instance["grid"] = mInput
-                    # isnotABomb_instance["input_array"] = mInput
 
                     # Create a MiniZinc solver instance (e.g., Gecode)
                     result = instance.solve()
     
                     if result.status== Status.UNSATISFIABLE:
+                        # for debug
                         print("bomb")
                         if not self.board[row][col].is_flag():
                             self.rclicked(self.board[row][col])
@@ -392,7 +397,8 @@ class Minesweeper:
                         instance["grid"] = mInput
                         result = instance.solve()
                         if result.status== Status.UNSATISFIABLE:
-                            print("not a bomb")
+                            # for debug
+                            # print("not a bomb")
                             self.lclicked(self.board[row][col])
                         
 
@@ -400,8 +406,8 @@ class Minesweeper:
             
             
 
-
-        print(self.current_board)
+        # for debug
+        # print(self.current_board)
         return is_assigned
 
     def import_board(self,board):
