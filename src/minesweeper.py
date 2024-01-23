@@ -401,7 +401,12 @@ class Minesweeper:
 
         # for debug
         # print(self.current_board)
-
+    def is_not_certain(self, row, col):
+        if self.prob[row][col] == 100:
+            return False
+        if self.prob[row][col] == 0:
+            return False
+        return True
 
 
     def hint_prob(self):
@@ -409,51 +414,51 @@ class Minesweeper:
             for col in range(self.col_size):
                 # for debug
                 # print(self.has_shown_neighbour(row,col))
-                if not self.prob[row][col] == 100 or not self[row][col] == 0:
+                if self.is_not_certain(row,col):
                     self.prob[row][col] = -1
                     
-                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col) and self.prob[row][col] == -1:
-                    mInput = np.full((7, 7), -3)
-                    start_r = max(0, row - 3)
-                    end_r = min(16, row + 4)
-                    start_c = max(0, col - 3)
-                    end_c = min(16, col + 4)
-                    mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
-                    # isABomb
-                    mInput[3][3] = -3 
+                    if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col) and self.prob[row][col] == -1:
+                        mInput = np.full((7, 7), -3)
+                        start_r = max(0, row - 3)
+                        end_r = min(16, row + 4)
+                        start_c = max(0, col - 3)
+                        end_c = min(16, col + 4)
+                        mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
+                        # isABomb
+                        mInput[3][3] = -3 
 
-                    # Load MiniZinc models
-                    isABomb_model = Model("./isABomb.mzn")
+                        # Load MiniZinc models
+                        isABomb_model = Model("./isABomb.mzn")
 
-                    # Find the MiniZinc solver configuration for Gecode
-                    gecode = Solver.lookup("gecode")
+                        # Find the MiniZinc solver configuration for Gecode
+                        gecode = Solver.lookup("gecode")
 
-                    # Create a MiniZinc instance for each model
-                    instance = Instance(gecode, isABomb_model)
-                    # isnotABomb_instance = Instance(isnotABomb_model)
+                        # Create a MiniZinc instance for each model
+                        instance = Instance(gecode, isABomb_model)
+                        # isnotABomb_instance = Instance(isnotABomb_model)
 
-                    # Set input data (mInput) for both instances
-                    instance["grid"] = mInput
-
-                    # Create a MiniZinc solver instance (e.g., Gecode)
-                    result = instance.solve()
-    
-                    if result.status== Status.UNSATISFIABLE:
-                        # for debug
-                        self.prob[row][col] = 100
-
-                    else:
-                        mInput[3][3] = -2 
-                        notABomb_model = Model("./notABomb.mzn")
-                        instance = Instance(gecode, notABomb_model)
+                        # Set input data (mInput) for both instances
                         instance["grid"] = mInput
+
+                        # Create a MiniZinc solver instance (e.g., Gecode)
                         result = instance.solve()
+        
                         if result.status== Status.UNSATISFIABLE:
                             # for debug
-                            # print("not a bomb")
-                            self.prob[row][col] = 0
+                            self.prob[row][col] = 100
 
-                    print('row:',row,'col', col, 'prob', self.prob[row][col])
+                        else:
+                            mInput[3][3] = -2 
+                            notABomb_model = Model("./notABomb.mzn")
+                            instance = Instance(gecode, notABomb_model)
+                            instance["grid"] = mInput
+                            result = instance.solve()
+                            if result.status== Status.UNSATISFIABLE:
+                                # for debug
+                                # print("not a bomb")
+                                self.prob[row][col] = 0
+
+                        print('row:',row,'col', col, 'prob', self.prob[row][col])
         print('done')
         
 
