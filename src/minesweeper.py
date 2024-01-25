@@ -341,6 +341,7 @@ class Minesweeper:
         return False
     
 
+
     def hint_solve(self):
         """Solve parts of the game bases on current board's information by using Minizinc.
         Return the number of variables made.
@@ -408,6 +409,15 @@ class Minesweeper:
             return False
         return True
 
+    def can_be_x(self, grid, center):
+        model = Model("./canBeX.mzn")
+        gecode = Solver.lookup("gecode")
+        instance = Instance(gecode, model)
+        instance["grid"] = grid
+        instance["center"] = center
+        result = instance.solve()
+        return result.status
+
 
     def hint_prob(self):
         for row in range(self.row_size):
@@ -457,6 +467,19 @@ class Minesweeper:
                                 # for debug
                                 # print("not a bomb")
                                 self.prob[row][col] = 0
+                            else:
+                                print("run prob")
+                                denominator = 1.0
+                                for i in range(1,9):
+                                    result = self.can_be_x(mInput,i)
+                                    # for debug
+                                    # print(result)
+                                    if result==Status.SATISFIED:
+                                        denominator = denominator+1.0
+                                    # for debug
+                                    # print (denominator)
+                                self.prob[row][col] = (1.0/denominator)*100
+
 
                         print('row:',row,'col', col, 'prob', self.prob[row][col])
         print('done')
