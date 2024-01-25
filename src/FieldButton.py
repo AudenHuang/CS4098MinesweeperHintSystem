@@ -14,6 +14,7 @@ class FieldButton(Button):
         self.img_flag = images['flag']
         self.img_wrong = images['wrong']
         self.img_no = images['no']
+        self.img_prob = images['prob']
 
         super(FieldButton, self).__init__(frame,image = self.img_blank)
 
@@ -72,7 +73,9 @@ class FieldButton(Button):
             else:
                 self.config(image = self.img_flag)
             self.is_flagged = not self.is_flagged
-
+    def show_prob(self, prob):
+        if not self.is_visible:
+            self.config(image = self.img_prob[prob])
 
     def is_flag(self):
         '''Return True if button is flagged; False otherwise.

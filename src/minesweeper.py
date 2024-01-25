@@ -62,8 +62,11 @@ class Minesweeper:
         self.images['flag'] = PhotoImage(file = "images/img_flag.gif")
         self.images['wrong'] = PhotoImage(file = "images/img_wrong_mine.gif")
         self.images['no'] = []
+        self.images['prob'] = []
         for i in range(0, 9):
             self.images['no'].append(PhotoImage(file = "images/img_"+str(i)+".gif"))
+            self.images['prob'].append(PhotoImage(file = "images/img_prob_"+str(i)+".gif"))
+    
 
         # Read test boards if it's not empty
         if not board:
@@ -428,6 +431,7 @@ class Minesweeper:
                     self.prob[row][col] = -1
                     
                     if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col) and self.prob[row][col] == -1:
+                        button = self.board[row][col]
                         mInput = np.full((7, 7), -3)
                         start_r = max(0, row - 3)
                         end_r = min(16, row + 4)
@@ -456,6 +460,8 @@ class Minesweeper:
                         if result.status== Status.UNSATISFIABLE:
                             # for debug
                             self.prob[row][col] = 100
+                            # need to change this in the future
+                            button.show_prob(8)
 
                         else:
                             mInput[3][3] = -2 
@@ -467,6 +473,7 @@ class Minesweeper:
                                 # for debug
                                 # print("not a bomb")
                                 self.prob[row][col] = 0
+                                button.show_prob(0)
                             else:
                                 print("run prob")
                                 denominator = 1.0
@@ -478,10 +485,26 @@ class Minesweeper:
                                         denominator = denominator+1.0
                                     # for debug
                                     # print (denominator)
-                                self.prob[row][col] = (1.0/denominator)*100
+                                prob = (1.0/denominator)*100
+                                self.prob[row][col] = prob
+                                if prob > 60:
+                                    button.show_prob(7)
+                                elif prob > 50:
+                                    button.show_prob(6)
+                                elif prob > 40:
+                                    button.show_prob(5)
+                                elif prob > 30:
+                                    button.show_prob(4)
+                                elif prob > 20:
+                                    button.show_prob(3)
+                                elif prob > 10:
+                                    button.show_prob(2)
+                                elif prob > 0:
+                                    button.show_prob(1)
 
 
                         print('row:',row,'col', col, 'prob', self.prob[row][col])
+                    
         print('done')
         
 
