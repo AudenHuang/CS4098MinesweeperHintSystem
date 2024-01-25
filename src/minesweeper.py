@@ -110,7 +110,7 @@ class Minesweeper:
         for button in self.buttons:
             button.reset()
             button.bind('<Button-1>', self.lclicked_wrapper(button))
-            button.bind('<Button-3>', self.rclicked_wrapper(button))
+            button.bind('<Button-2>', self.rclicked_wrapper(button))
         # Place mines randomly.
         #self.init_random_mines()
         # Reset remaining mines label and newgame button.
@@ -137,7 +137,7 @@ class Minesweeper:
         # Bind LMB and RMB actions to button.
         for button in self.buttons:
             button.bind('<Button-1>', self.lclicked_wrapper(button))
-            button.bind('<Button-3>', self.rclicked_wrapper(button))
+            button.bind('<Button-2>', self.rclicked_wrapper(button))
         # for debug
         # print(self.current_board)
 
@@ -297,7 +297,7 @@ class Minesweeper:
             elif button.is_flag():
                 button.show_wrong_flag()
             button.unbind('<Button-1>')
-            button.unbind('<Button-3>')
+            button.unbind('<Button-2>')
 
     def is_win(self):
         '''Return True if game wins; False otherwise. The game wins if all buttons are either visible or flagged, and
