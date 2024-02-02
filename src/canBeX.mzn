@@ -28,7 +28,7 @@ constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -3) (
   outputgrid[i, j] in 0..8
 );
 
-constraint outputgrid[3,3] = center;
+constraint outputgrid[4,4] = center;
 % Count Mines
 function var int: countMines(int: i, int: j) =
   sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
