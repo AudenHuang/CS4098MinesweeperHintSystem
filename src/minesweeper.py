@@ -366,13 +366,17 @@ class Minesweeper:
                         end_c = min(16, col + 4)
                         mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
                         # isABomb
-                        mInput[3][3] = -3
-                        # if col-3>=0:
-                        #     for i in range(0,3):
-                        #         if (mInput[0][i])==-2:
-                        #             if not self.has_shown_neighbour(row-3,col-3+i):
-                        #                 mInput[0][i] == -4
+# --------------------------------------------------------
+                        for i in range(7):
+                            for j in range(7):
+                                if mInput[i][j] == -1:
+                                    if not self.has_shown_neighbour(row-3+i,col-3+j):
+                                        mInput[i][j] = -4
 
+# ------------------------------------------------------------------------
+                        # for debug
+                        # print(row+1,col+1)
+                        print(mInput)
                         # Load MiniZinc models
                         isABomb_model = Model("./isABomb.mzn")
 
@@ -385,23 +389,25 @@ class Minesweeper:
 
                         # Set input data (mInput) for both instances
                         instance["grid"] = mInput
-                        result = instance.solve()
-                        # Create a MiniZinc solver instance (e.g., Gecode)
-
-                        # print("Finding Results....")
-                        # nNotMresult = instance.solve(all_solutions= True).statistics["solutions"]
-                        # print(nNotMresult)
-
-                        # result = instance.solve(all_solutions= True)
-
-                        # if nNotMresult<1:
-                        #     print("bomb")
-                        #     self.rclicked(self.board[row][col])
-
-                        if result.status== Status.UNSATISFIABLE:
-                            # for debug
-                            # print("bomb")
+                        # result = instance.solve(
+                      
+                        
+# -----------------------------------------------------------------
+                        print("Finding Results....")
+                        result = instance.solve(all_solutions= True)
+                        nNotMresult=0
+                        if result:
+                            nNotMresult=result.statistics["solutions"]
+                        print(nNotMresult)
+                        if nNotMresult<1:
+                            print("bomb")
                             self.rclicked(self.board[row][col])
+# -----------------------------------------------------------------
+
+                        # if result.status== Status.UNSATISFIABLE:
+                        #     # for debug
+                        #     # print("bomb")
+                        #     self.rclicked(self.board[row][col])
 
                         else:
                             mInput[3][3] = -2 
