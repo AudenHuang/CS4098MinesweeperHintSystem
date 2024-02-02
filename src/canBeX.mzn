@@ -3,7 +3,7 @@ int: Width = 7;
 int: Height = 7;
 
 % data from python
-array[1..Width, 1..Height] of -3..8: grid;
+array[1..Width, 1..Height] of -4..8: grid;
 
 int: center;
 

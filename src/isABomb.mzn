@@ -3,11 +3,11 @@ int: Width = 7;
 int: Height = 7;
 
 % data from python
-array[1..Width, 1..Height] of -3..8: grid;
+array[1..Width, 1..Height] of -4..8: grid;
 
 
 % Decision variable for the output grid
-array[1..Width, 1..Height] of var -2..8: outputgrid;
+array[1..Width, 1..Height] of var -4..8: outputgrid;
 
 % Set of valid values for unrevealed cells
 set of -2..8: valid_unrevealed = {-2} union 0..8;

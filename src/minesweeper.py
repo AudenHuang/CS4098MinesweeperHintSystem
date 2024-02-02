@@ -343,14 +343,6 @@ class Minesweeper:
                 return True
         return False
     
-    def prob_test(self):
-        isABomb_model = Model("./isABomb.mzn")
-                        # Find the MiniZinc solver configuration for Gecode
-        gecode = Solver.lookup("gecode")
-
-                        # Create a MiniZinc instance for each model
-        instance = Instance(gecode, isABomb_model)
-        result = instance.solve(all_solutions= True)
 
     def hint_solve(self):
         """Solve parts of the game bases on current board's information by using Minizinc.
@@ -367,14 +359,19 @@ class Minesweeper:
                     elif self.prob[row][col]== 100:
                         self.rclicked(self.board[row][col])
                     else:
-                        mInput = np.full((7, 7), -3)
+                        mInput = np.full((7, 7), -4)
                         start_r = max(0, row - 3)
                         end_r = min(16, row + 4)
                         start_c = max(0, col - 3)
                         end_c = min(16, col + 4)
                         mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
                         # isABomb
-                        mInput[3][3] = -3 
+                        mInput[3][3] = -3
+                        # if col-3>=0:
+                        #     for i in range(0,3):
+                        #         if (mInput[0][i])==-2:
+                        #             if not self.has_shown_neighbour(row-3,col-3+i):
+                        #                 mInput[0][i] == -4
 
                         # Load MiniZinc models
                         isABomb_model = Model("./isABomb.mzn")
@@ -388,21 +385,22 @@ class Minesweeper:
 
                         # Set input data (mInput) for both instances
                         instance["grid"] = mInput
-
-                        # Create a MiniZinc solver instance (e.g., Gecode)
-                        print("Finding Results....")
                         result = instance.solve()
+                        # Create a MiniZinc solver instance (e.g., Gecode)
+
+                        # print("Finding Results....")
+                        # nNotMresult = instance.solve(all_solutions= True).statistics["solutions"]
+                        # print(nNotMresult)
+
                         # result = instance.solve(all_solutions= True)
-                        if result:
-                            print("calculating....")
-                            # num_solutions = result.statistics['solutions']
-                            num_solutions = result.statistics
-                            # print(result)
-                            print("done")
-                            print(f'Total number of satisfying solutions: {num_solutions}')
+
+                        # if nNotMresult<1:
+                        #     print("bomb")
+                        #     self.rclicked(self.board[row][col])
+
                         if result.status== Status.UNSATISFIABLE:
                             # for debug
-                            print("bomb")
+                            # print("bomb")
                             self.rclicked(self.board[row][col])
 
                         else:
@@ -438,6 +436,8 @@ class Minesweeper:
 
 
     def hint_prob(self):
+
+
         for row in range(self.row_size):
             for col in range(self.col_size):
                 # for debug
