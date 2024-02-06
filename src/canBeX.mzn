@@ -5,7 +5,6 @@ int: Height = 7;
 % data from python
 array[1..Width, 1..Height] of -4..8: grid;
 
-int: center;
 
 % Decision variable for the output grid
 array[1..Width, 1..Height] of var -2..8: outputgrid;
@@ -28,7 +27,6 @@ constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -3) (
   outputgrid[i, j] in 0..8
 );
 
-constraint outputgrid[4,4] = center;
 % Count Mines
 function var int: countMines(int: i, int: j) =
   sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 

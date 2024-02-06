@@ -43,6 +43,8 @@ class Minesweeper:
         self.board = []
     
 
+        self.input_row_size = 7
+        self.input_col_size = 7
         self.current_board = np.full((self.row_size, self.col_size), -1)
         self.prob = np.full((self.row_size, self.col_size), -1)
         
@@ -150,7 +152,7 @@ class Minesweeper:
         '''
         mines = self.mines_amount
         while mines:
-            buttons = self.get_surrounding_buttons(self.first_click_button.x, self.first_click_button.y, self.row_size,self.col_size,self.board)
+            buttons = self.get_adjecent_grids(self.first_click_button.x, self.first_click_button.y, self.row_size,self.col_size,self.board)
             buttons.append(self.first_click_button)
             
             #flag to check if random coordinates matches the initial click's 9 grids
@@ -170,15 +172,10 @@ class Minesweeper:
                 self.mines.append(self.board[row][col])
                 self.update_surrounding_buttons(row, col, 1)
                 mines -= 1
-    
-    #def rearrange_mines(self, button):
-        #buttons = get_surrounding_buttons(self, button.y, button.x)
-        #buttons.append(button)
-        #for b in buttons:
             
         
 
-    def get_surrounding_buttons(self, row, col, r_size, c_size,input):
+    def get_adjecent_grids(self, row, col, r_size, c_size,input):
         '''Return a list of surrounding buttons of button at row and col in board.
         :param row: int
         :param col: int
@@ -207,7 +204,7 @@ class Minesweeper:
         :param col: int
         '''
 
-        cells = self.get_surrounding_buttons(row, col,self.row_size,self.col_size,self.board)
+        cells = self.get_adjecent_grids(row, col,self.row_size,self.col_size,self.board)
         for cell in cells:
             if not cell.is_mine():
                 cell.value += value
@@ -242,7 +239,7 @@ class Minesweeper:
             buttons = [button]
             while buttons:
                 temp_button = buttons.pop()
-                surrounding = self.get_surrounding_buttons(temp_button.x, temp_button.y, self.row_size, self.col_size, self.board)
+                surrounding = self.get_adjecent_grids(temp_button.x, temp_button.y, self.row_size, self.col_size, self.board)
                 for neighbour in surrounding:
                     if not neighbour.is_show() and neighbour.value == 0:
                         buttons.append(neighbour)
@@ -337,9 +334,15 @@ class Minesweeper:
         return random.choice(buttons)
 
     def has_shown_neighbour(self,r,c):
-        adjecent_grids = self.get_surrounding_buttons(r,c,self.row_size,self.col_size,self.board)
+        adjecent_grids = self.get_adjecent_grids(r,c,self.row_size,self.col_size,self.board)
         for grid in adjecent_grids:
             if grid.is_show():
+                return True
+        return False
+    def has_shown_neighbour_input(self,mInput,r,c):
+        adjecent_grids  = self.get_adjecent_grids(r,c,self.input_row_size,self.input_col_size,mInput)
+        for grid in adjecent_grids:
+            if grid >=0:
                 return True
         return False
     def createInput(self,row,col):
@@ -353,7 +356,7 @@ class Minesweeper:
         for i in range(7):
             for j in range(7):
                 if mInput[i][j] == -1:
-                    if not self.has_shown_neighbour(row-3+i,col-3+j):
+                    if not self.has_shown_neighbour_input(mInput,i,j):
                         mInput[i][j] = -4
         return mInput
 
@@ -373,6 +376,7 @@ class Minesweeper:
                         self.rclicked(self.board[row][col])
                     else:
                         mInput = self.createInput(row,col)
+                        print(mInput)
                         mInput[3][3] = -3
 # ------------------------------------------------------------------------
                         # for debug
@@ -435,10 +439,11 @@ class Minesweeper:
         model = Model("./canBeX.mzn")
         gecode = Solver.lookup("gecode")
         instance = Instance(gecode, model)
+        grid[3][3]= center
         instance["grid"] = grid
-        instance["center"] = center
         result = instance.solve()
         return result.status
+
 
     def hint_prob(self):
         for row in range(self.row_size):
@@ -494,13 +499,14 @@ class Minesweeper:
                                 for i in range(1,9):
                                     result = self.can_be_x(mInput,i)
                                     # for debug
-                                    print(result)
+                                    # print(result)
                                     if result==Status.SATISFIED:
                                         denominator = denominator+1.0
                                     # for debug
                                     # print (denominator)
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
+                            
                                 if prob > 60:
                                     button.show_prob(7)
                                 elif prob > 50:
@@ -514,7 +520,8 @@ class Minesweeper:
                                 elif prob > 10:
                                     button.show_prob(2)
                                 elif prob > 0:
-                                    button.show_prob(1)                
+                                    button.show_prob(1)  
+                        print(row,col, self.prob[row][col])              
         print('done')
 
         
