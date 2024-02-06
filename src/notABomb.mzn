@@ -31,6 +31,11 @@ function var int: countMines(int: i, int: j) =
        then (outputgrid[i+di, j+dj] = -2) else 0 endif 
        | di in -1..1, dj in -1..1]);
        
+function var int: countMinus4(int: i, int: j) =
+  sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
+       then (outputgrid[i+di, j+dj] = -4) else 0 endif 
+       | di in -1..1, dj in -1..1]);
+       
 
 constraint forall(i in 2..Width-1, j in 2..Height-1 where outputgrid[i, j] >= 0) (
   countMines(i, j) = outputgrid[i, j]
@@ -42,6 +47,15 @@ constraint forall(i in {1,Width}, j in 1..Height where outputgrid[i, j] >= 0) (
 constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) (
   countMines(i, j) <= outputgrid[i, j]
 );
+
+% constraint forall(i in 1..Width, j in 1..Height where outputgrid[i,j]>=0)(
+%     if countMinus4(i,j) > 0 then
+%       countMines(i, j) <= outputgrid[i, j]
+%     else
+%       countMines(i, j) == outputgrid[i, j]
+%     endif
+% );
+
 
 
 solve satisfy;
