@@ -361,6 +361,81 @@ class Minesweeper:
                         mInput[i][j] = -3
         return mInput
 
+#     def hint_solve(self):
+#         """Solve parts of the game bases on current board's information by using Minizinc.
+#         Return the number of variables made.
+#         """
+        
+#         for row in range(self.row_size):
+#             for col in range(self.col_size):
+#                 # for debug
+#                 # print(self.has_shown_neighbour(row,col))
+#                 if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+#                     if self.prob[row][col]== 0:
+#                         self.lclicked(self.board[row][col])
+#                     elif self.prob[row][col]== 100:
+#                         self.rclicked(self.board[row][col])
+#                     else:
+#                         mInput = self.createInput(row,col)
+# # ------------------------------------------------------------------------
+#                         # for debug
+#                         # print(row+1,col+1)
+#                         # Load MiniZinc models
+#                         isABomb_model = Model("./isABomb.mzn")
+
+#                         # Find the MiniZinc solver configuration for Gecode
+#                         gecode = Solver.lookup("gecode")
+
+#                         # Create a MiniZinc instance for each model
+#                         instance = Instance(gecode, isABomb_model)
+#                         # isnotABomb_instance = Instance(isnotABomb_model)
+
+#                         # Set input data (mInput) for both instances
+#                         mInput[3][3] = -5
+#                         # print(mInput)
+#                         instance["grid"] = mInput
+
+                      
+                        
+# # -----------------------------------------------------------------
+#                         print("Finding Finding # results that it isn't a bomb ........")
+#                         result = instance.solve(all_solutions= True)
+#                         nNotMresult = 0
+#                         if result:
+#                             nNotMresult=result.statistics["solutions"]
+#                         print(nNotMresult)
+#                         if nNotMresult<1:
+#                             print("bomb")
+#                             self.rclicked(self.board[row][col])
+# # -----------------------------------------------------------------
+#                         # result = instance.solve()
+#                         # if result.status== Status.UNSATISFIABLE:
+#                         #     # for debug
+#                         #     # print("bomb")
+#                         #     self.rclicked(self.board[row][col])
+
+#                         else:
+#                             mInput[3][3] = -2 
+#                             notABomb_model = Model("./notABomb.mzn")
+#                             instance = Instance(gecode, notABomb_model)
+#                             instance["grid"] = mInput
+#                             print("Finding # results that it is a bomb ....")
+#                             result = instance.solve(all_solutions= True)
+#                             nMresult = 0
+#                             if result:
+#                                 nMresult=result.statistics["solutions"]
+#                             print(nMresult)
+#                             if nMresult<1:
+#                                 print("bomb")
+#                                 self.lclicked(self.board[row][col])
+#                             else:
+#                                 prob = nMresult/(nMresult+nNotMresult)
+#                                 print (prob)
+#                             # result = instance.solve()
+#                             # if result.status== Status.UNSATISFIABLE:
+#                             #     # for debug
+#                             #     # print("not a bomb")
+#                             #     self.lclicked(self.board[row][col])
     def hint_solve(self):
         """Solve parts of the game bases on current board's information by using Minizinc.
         Return the number of variables made.
@@ -377,55 +452,28 @@ class Minesweeper:
                         self.rclicked(self.board[row][col])
                     else:
                         mInput = self.createInput(row,col)
-
-# ------------------------------------------------------------------------
-                        # for debug
-                        # print(row+1,col+1)
-                        # Load MiniZinc models
-                        isABomb_model = Model("./isABomb.mzn")
-
-                        # Find the MiniZinc solver configuration for Gecode
+                        mInput[3][3]=-2
+                        notABomb_model = Model("./notABomb.mzn")
                         gecode = Solver.lookup("gecode")
-
-                        # Create a MiniZinc instance for each model
-                        instance = Instance(gecode, isABomb_model)
-                        # isnotABomb_instance = Instance(isnotABomb_model)
-
-                        # Set input data (mInput) for both instances
-                        mInput[3][3] = -5
-                        print(mInput)
+                        instance = Instance(gecode, notABomb_model)
                         instance["grid"] = mInput
-
-                      
-                        
-# -----------------------------------------------------------------
-                        # print("Finding Results....")
-                        # result = instance.solve(all_solutions= True)
-                        # nNotMresult = 0
-                        # if result:
-                        #     nNotMresult=result.statistics["solutions"]
-                        # print(nNotMresult)
-                        # if nNotMresult<1:
-                        #     print("bomb")
-                        #     self.rclicked(self.board[row][col])
-# -----------------------------------------------------------------
                         result = instance.solve()
                         if result.status== Status.UNSATISFIABLE:
                             # for debug
                             # print("bomb")
-                            self.rclicked(self.board[row][col])
-
+                            self.lclicked(self.board[row][col]) 
                         else:
-                            mInput[3][3] = -2 
-                            notABomb_model = Model("./notABomb.mzn")
-                            instance = Instance(gecode, notABomb_model)
+                            mInput[3][3]=-5
+                            isABomb_model = Model("./isABomb.mzn")
+
+                            # Create a MiniZinc instance for each model
+                            instance = Instance(gecode, isABomb_model)
                             instance["grid"] = mInput
                             result = instance.solve()
                             if result.status== Status.UNSATISFIABLE:
                                 # for debug
-                                # print("not a bomb")
-                                self.lclicked(self.board[row][col])
-            
+                                # print("bomb")
+                                self.rclicked(self.board[row][col])
             
 
         # for debug
@@ -528,7 +576,42 @@ class Minesweeper:
 
         
     def hint_prob_smart(self):
-        return 0
+        for row in range(self.row_size):
+            for col in range(self.col_size):
+                prob =0
+                # for debug
+                # print(self.has_shown_neighbour(row,col))
+                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+                    mInput = self.createInput(row,col)
+                    mInput[3][3]=-2
+                    notABomb_model = Model("./notABomb.mzn")
+                    gecode = Solver.lookup("gecode")
+                    instance = Instance(gecode, notABomb_model)
+                    instance["grid"] = mInput
+                    print("Finding # results that it is a bomb ....")
+                    result = instance.solve(all_solutions= True)
+                    nMresult = 0
+                    if result:
+                        nMresult=result.statistics["solutions"]
+                    if nMresult>0:
+                        mInput[3][3]=-5
+                        isABomb_model = Model("./isABomb.mzn")
+
+                        # Create a MiniZinc instance for each model
+                        instance = Instance(gecode, isABomb_model)
+                        instance["grid"] = mInput
+                        print("Finding # results that it isn't a bomb ........")
+                        result = instance.solve(all_solutions= True)
+                        nNotMresult = 0
+                        if result:
+                            nNotMresult=result.statistics["solutions"]
+                        if nNotMresult<1:
+                            prob = 100
+                        else:
+                            prob = nMresult/(nMresult+nNotMresult)*100
+                    print(prob)
+        print("done")
+       
 
 
 
