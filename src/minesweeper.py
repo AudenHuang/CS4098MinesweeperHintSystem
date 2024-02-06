@@ -339,6 +339,7 @@ class Minesweeper:
             if grid.is_show():
                 return True
         return False
+    
     def has_shown_neighbour_input(self,mInput,r,c):
         adjecent_grids  = self.get_adjecent_grids(r,c,self.input_row_size,self.input_col_size,mInput)
         for grid in adjecent_grids:
@@ -346,7 +347,7 @@ class Minesweeper:
                 return True
         return False
     def createInput(self,row,col):
-        mInput = np.full((7, 7), -4)
+        mInput = np.full((self.input_row_size, self.input_col_size), -4)
         start_r = max(0, row - 3)
         end_r = min(16, row + 4)
         start_c = max(0, col - 3)
@@ -357,7 +358,7 @@ class Minesweeper:
             for j in range(7):
                 if mInput[i][j] == -1:
                     if not self.has_shown_neighbour_input(mInput,i,j):
-                        mInput[i][j] = -4
+                        mInput[i][j] = -3
         return mInput
 
     def hint_solve(self):
@@ -376,8 +377,7 @@ class Minesweeper:
                         self.rclicked(self.board[row][col])
                     else:
                         mInput = self.createInput(row,col)
-                        print(mInput)
-                        mInput[3][3] = -3
+
 # ------------------------------------------------------------------------
                         # for debug
                         # print(row+1,col+1)
@@ -392,6 +392,8 @@ class Minesweeper:
                         # isnotABomb_instance = Instance(isnotABomb_model)
 
                         # Set input data (mInput) for both instances
+                        mInput[3][3] = -5
+                        print(mInput)
                         instance["grid"] = mInput
 
                       
@@ -455,14 +457,14 @@ class Minesweeper:
                     
                     if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col) and self.prob[row][col] == -1:
                         button = self.board[row][col]
-                        mInput = np.full((7, 7), -3)
+                        mInput = np.full((7, 7), -4)
                         start_r = max(0, row - 3)
                         end_r = min(16, row + 4)
                         start_c = max(0, col - 3)
                         end_c = min(16, col + 4)
                         mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
                         # isABomb
-                        mInput[3][3] = -3 
+                        mInput[3][3] = -5
                         # Load MiniZinc models
                         isABomb_model = Model("./isABomb.mzn")
                         # Find the MiniZinc solver configuration for Gecode
@@ -474,7 +476,7 @@ class Minesweeper:
                         instance["grid"] = mInput
                         # Create a MiniZinc solver instance (e.g., Gecode)
                         result = instance.solve()
-        
+                        print("")
                         if result.status== Status.UNSATISFIABLE:
                             # for debug
                             self.prob[row][col] = 100
