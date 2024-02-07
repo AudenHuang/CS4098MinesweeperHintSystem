@@ -65,9 +65,10 @@ class Minesweeper:
         self.images['wrong'] = PhotoImage(file = "images/img_wrong_mine.gif")
         self.images['no'] = []
         self.images['prob'] = [PhotoImage(file = "images/img_blank.gif")]
-        for i in range(0, 9):
-            self.images['no'].append(PhotoImage(file = "images/img_"+str(i)+".gif"))
+        for i in range(0, 12):
             self.images['prob'].append(PhotoImage(file = "images/img_prob_"+str(i)+".gif"))
+            if i< 9:
+                self.images['no'].append(PhotoImage(file = "images/img_"+str(i)+".gif"))
     
 
         # Read test boards if it's not empty
@@ -468,7 +469,7 @@ class Minesweeper:
                             # for debug
                             self.prob[row][col] = 100
                             # need to change this in the future
-                            button.show_prob(9)
+                            button.show_prob(12)
                         else:
                             input[3][3] = -2 
                             instance = self.createInstance("./notABomb.mzn",input)
@@ -483,28 +484,25 @@ class Minesweeper:
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
                             
-                                if prob > 60:
-                                    button.show_prob(8)
-                                elif prob > 50:
+                                if prob >= 50:
                                     button.show_prob(7)
-                                elif prob > 40:
+                                elif prob >= 40:
                                     button.show_prob(6)
-                                elif prob > 30:
+                                elif prob >= 30:
                                     button.show_prob(5)
-                                elif prob > 20:
+                                elif prob >= 20:
                                     button.show_prob(4)
-                                elif prob > 10:
+                                elif prob >= 10:
                                     button.show_prob(3)
                                 elif prob > 0:
                                     button.show_prob(2)  
-                        print(row,col, self.prob[row][col])              
+                        print(row+1,col+1, self.prob[row][col])              
         print('done')
 
         
     def hint_prob_smart(self):
         for row in range(self.row_size):
             for col in range(self.col_size):
-                prob =0
                 # for debug
                 # print(self.has_shown_neighbour(row,col))
                 if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
@@ -513,11 +511,13 @@ class Minesweeper:
                     instanceNM = self.createInstance("./notABomb.mzn",input.copy())
                     input[3][3]=-5
                     instanceM = self.createInstance("./isABomb.mzn",input)
-
+                    button = self.board[row][col]
                     if(instanceNM.solve().status==Status.UNSATISFIABLE):
                         self.prob[row][col] = 0
+                        button.show_prob(1)
                     elif(instanceM.solve().status==Status.UNSATISFIABLE):
                         self.prob[row][col] = 100
+                        button.show_prob(12)
                     else:
                         nMresult = instanceNM.solve(all_solutions= True).statistics["nSolutions"]
                         print(nMresult)
@@ -525,7 +525,27 @@ class Minesweeper:
                         print(nNotMresult)
                         prob = nMresult/(nMresult+nNotMresult)*100
                         self.prob[row][col] = prob
-                    print(row,col,self.prob[row][col])
+                        if prob >= 90:
+                            button.show_prob(11)
+                        elif prob >= 80:
+                            button.show_prob(10)
+                        elif prob >= 70:
+                            button.show_prob(9)
+                        elif prob >= 60:
+                            button.show_prob(8)
+                        elif prob >= 50:
+                            button.show_prob(7)
+                        elif prob >= 40:
+                            button.show_prob(6)
+                        elif prob >= 30:
+                            button.show_prob(5)
+                        elif prob >= 20:
+                            button.show_prob(4)
+                        elif prob >= 10:
+                            button.show_prob(3)
+                        elif prob > 0:
+                            button.show_prob(2)  
+                    print(row+1,col+1,self.prob[row][col])
                     print("")
         print("done")
        
