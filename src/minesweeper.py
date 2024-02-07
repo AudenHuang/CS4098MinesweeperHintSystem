@@ -64,7 +64,7 @@ class Minesweeper:
         self.images['flag'] = PhotoImage(file = "images/img_flag.gif")
         self.images['wrong'] = PhotoImage(file = "images/img_wrong_mine.gif")
         self.images['no'] = []
-        self.images['prob'] = []
+        self.images['prob'] = [PhotoImage(file = "images/img_blank.gif")]
         for i in range(0, 9):
             self.images['no'].append(PhotoImage(file = "images/img_"+str(i)+".gif"))
             self.images['prob'].append(PhotoImage(file = "images/img_prob_"+str(i)+".gif"))
@@ -86,16 +86,21 @@ class Minesweeper:
 
         # Initialize Hint  button.
         self.solvecomp_button = Button(self.frame, text="Hint_Solve")
-        self.solvecomp_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size, sticky=E)
+        self.solvecomp_button.grid(row = self.row_size+1,column = 0, columnspan = self.col_size, sticky=E)
         self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
 
+        self.show_certain_button = Button(self.frame, text="Hint_Certain")
+        self.show_certain_button.grid(row = self.row_size+1,column = 0, columnspan = self.col_size-4, sticky=E)
+        self.show_certain_button.bind("<Button-1>", lambda Button: self.hint_show_certain())
+
         self.showprob_button = Button(self.frame, text="Show_Prob")
-        self.showprob_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size-4, sticky=E)
+        self.showprob_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size, sticky=E)
         self.showprob_button.bind("<Button-1>", lambda Button: self.hint_prob())
 
         self.showprob_button = Button(self.frame, text="Show_Prob_Smart")
-        self.showprob_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size-8, sticky=E)
+        self.showprob_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size-4, sticky=E)
         self.showprob_button.bind("<Button-1>", lambda Button: self.hint_prob_smart())
+
         
 
     def newgame(self):
@@ -284,8 +289,6 @@ class Minesweeper:
     def gameover(self):
         '''Disable all buttons and show all mines.
         '''
-        # if self.is_win():
-        #     self.win_times += 1
         self.is_over = True
         for button in self.buttons:
             if button.is_mine():
@@ -302,11 +305,6 @@ class Minesweeper:
 
         :return: bool
         '''
-        
-        #if self.f  lags == self.mines_amount:
-        #for mine in self.mines:
-            #if not mine.is_flag():
-                #return False
         for button in self.buttons:
             if not button.is_show() and not button.is_mine():
                 return False
@@ -334,6 +332,10 @@ class Minesweeper:
         return random.choice(buttons)
 
     def has_shown_neighbour(self,r,c):
+        '''Patameter: row's and colum's number of a grid
+        Function: check if any of the adjecent grids is shown
+        Return: True if there is a shown neighbor and False if there isn't
+        '''
         adjecent_grids = self.get_adjecent_grids(r,c,self.row_size,self.col_size,self.board)
         for grid in adjecent_grids:
             if grid.is_show():
@@ -341,12 +343,20 @@ class Minesweeper:
         return False
     
     def has_shown_neighbour_input(self,mInput,r,c):
+        '''Patameter: a 2d array, row's and colum's number of a grid in the given array
+        Function: check if any of the adjecent grids in the 2d array is shown
+        Return: True if there is a shown neighbor and False if there isn't
+        '''
         adjecent_grids  = self.get_adjecent_grids(r,c,self.input_row_size,self.input_col_size,mInput)
         for grid in adjecent_grids:
             if grid >=0:
                 return True
         return False
+    
     def createInput(self,row,col):
+        '''Patameter: row's and colum's number of a grid
+        Function: create a 7 by 7 input for the Minizinc model
+        Return: the created input'''
         mInput = np.full((self.input_row_size, self.input_col_size), -4)
         start_r = max(0, row - 3)
         end_r = min(16, row + 4)
@@ -361,64 +371,81 @@ class Minesweeper:
                         mInput[i][j] = -3
         return mInput
 
-
-    def hint_solve(self):
-        """Solve parts of the game bases on current board's information by using Minizinc.
-        Return the number of variables made.
-        """
-        
-        for row in range(self.row_size):
-            for col in range(self.col_size):
-                # for debug
-                # print(self.has_shown_neighbour(row,col))
-                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
-                    if self.prob[row][col]== 0:
-                        self.lclicked(self.board[row][col])
-                    elif self.prob[row][col]== 100:
-                        self.rclicked(self.board[row][col])
-                    else:
-                        mInput = self.createInput(row,col)
-                        mInput[3][3]=-2
-                        notABomb_model = Model("./notABomb.mzn")
-                        gecode = Solver.lookup("gecode")
-                        instance = Instance(gecode, notABomb_model)
-                        instance["grid"] = mInput
-                        result = instance.solve()
-                        if result.status== Status.UNSATISFIABLE:
-                            # for debug
-                            # print("bomb")
-                            self.lclicked(self.board[row][col]) 
-                        else:
-                            mInput[3][3]=-5
-                            isABomb_model = Model("./isABomb.mzn")
-
-                            # Create a MiniZinc instance for each model
-                            instance = Instance(gecode, isABomb_model)
-                            instance["grid"] = mInput
-                            result = instance.solve()
-                            if result.status== Status.UNSATISFIABLE:
-                                # for debug
-                                # print("bomb")
-                                self.rclicked(self.board[row][col])
-            
-
-        # for debug
-        # print(self.current_board)
     def is_not_certain(self, row, col):
         if self.prob[row][col] == 100:
             return False
         if self.prob[row][col] == 0:
             return False
         return True
-
-    def can_be_x(self, grid, center):
-        model = Model("./canBeX.mzn")
+    
+    def createInstance(self,path,value):
+        # Load MiniZinc models
+        model = Model(path)
+        # Create a MiniZinc solver instance (e.g., Gecode)
         gecode = Solver.lookup("gecode")
+        # Create a MiniZinc instance for the model
         instance = Instance(gecode, model)
-        grid[3][3]= center
-        instance["grid"] = grid
+        # Feed the input to the model
+        instance["grid"] = value
+        # Return the model instance
+        return instance
+  
+    def hint_solve(self):
+        """Function: solve parts of the game bases on current board's information by using Minizinc.
+        """
+        for row in range(self.row_size):
+            for col in range(self.col_size):
+                # for debug
+                # print(self.has_shown_neighbour(row,col))
+                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+                    if self.is_not_certain(row,col):
+                        mInput = self.createInput(row,col)
+                        mInput[3][3]=-2
+                        instance = self.createInstance("./notABomb.mzn",mInput)
+                        if instance.solve().status== Status.UNSATISFIABLE:
+                            self.lclicked(self.board[row][col]) 
+                        else:
+                            mInput[3][3]=-5
+                            instance = self.createInstance("./isABomb.mzn",mInput)
+                            if instance.solve().status== Status.UNSATISFIABLE:
+                                self.rclicked(self.board[row][col])
+                    else:
+                        if self.prob[row][col] == 0:
+                            self.lclicked(self.board[row][col]) 
+                        else:
+                            self.rclicked(self.board[row][col]) 
+            
+    def hint_show_certain(self):
+        for row in range(self.row_size):
+            for col in range(self.col_size):
+                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+                    if self.is_not_certain(row,col):
+                        input = self.createInput(row,col)
+                        input[3][3]=-2
+                        instanceNM=self.createInstance("./notABomb.mzn",input)
+                        button = self.board[row][col]
+                        if instanceNM.solve().status== Status.UNSATISFIABLE:
+                            button.show_prob(1)
+                            self.prob[row][col] = 0
+                            
+                        else:
+                            input[3][3]=-5
+                            instanceM = self.createInstance("./isABomb.mzn",input)
+                            if instanceM.solve().status== Status.UNSATISFIABLE:
+                                button.show_prob(9)
+                                self.prob[row][col] = 100
+                            else:
+                                button.show_prob(0)
+
+                    
+
+
+    def can_be_x(self, input, center):
+        input[3][3]= center
+        instance= self.createInstance("./canBeX.mzn",input)
         result = instance.solve()
         return result.status
+
 
 
     def hint_prob(self):
@@ -431,72 +458,45 @@ class Minesweeper:
                     
                     if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col) and self.prob[row][col] == -1:
                         button = self.board[row][col]
-                        mInput = np.full((7, 7), -4)
-                        start_r = max(0, row - 3)
-                        end_r = min(16, row + 4)
-                        start_c = max(0, col - 3)
-                        end_c = min(16, col + 4)
-                        mInput[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
+                        input = self.createInput(row,col)
                         # isABomb
-                        mInput[3][3] = -5
-                        # Load MiniZinc models
-                        isABomb_model = Model("./isABomb.mzn")
+                        input[3][3] = -5
                         # Find the MiniZinc solver configuration for Gecode
-                        gecode = Solver.lookup("gecode")
                         # Create a MiniZinc instance for each model
-                        instance = Instance(gecode, isABomb_model)
-                        # isnotABomb_instance = Instance(isnotABomb_model)
-                        # Set input data (mInput) for both instances
-                        instance["grid"] = mInput
-                        # Create a MiniZinc solver instance (e.g., Gecode)
-                        result = instance.solve()
-                        print("")
-                        if result.status== Status.UNSATISFIABLE:
+                        instance = self.createInstance("./isABomb.mzn",input)
+                        if instance.solve().status== Status.UNSATISFIABLE:
                             # for debug
                             self.prob[row][col] = 100
                             # need to change this in the future
-                            button.show_prob(8)
+                            button.show_prob(9)
                         else:
-                            mInput[3][3] = -2 
-                            notABomb_model = Model("./notABomb.mzn")
-                            instance = Instance(gecode, notABomb_model)
-                            instance["grid"] = mInput
-                            result = instance.solve()
-                            if result.status== Status.UNSATISFIABLE:
-                                # for debug
-                                # print("not a bomb")
+                            input[3][3] = -2 
+                            instance = self.createInstance("./notABomb.mzn",input)
+                            if instance.solve().status== Status.UNSATISFIABLE:
                                 self.prob[row][col] = 0
-                                button.show_prob(0)
+                                button.show_prob(1)
                             else:
-                                print("run prob")
-                                # for debug
-                                # print("run prob")
                                 denominator = 1.0
                                 for i in range(1,9):
-                                    result = self.can_be_x(mInput,i)
-                                    # for debug
-                                    # print(result)
-                                    if result==Status.SATISFIED:
+                                    if self.can_be_x(input,i)==Status.SATISFIED:
                                         denominator = denominator+1.0
-                                    # for debug
-                                    # print (denominator)
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
                             
                                 if prob > 60:
-                                    button.show_prob(7)
+                                    button.show_prob(8)
                                 elif prob > 50:
-                                    button.show_prob(6)
+                                    button.show_prob(7)
                                 elif prob > 40:
-                                    button.show_prob(5)
+                                    button.show_prob(6)
                                 elif prob > 30:
-                                    button.show_prob(4)
+                                    button.show_prob(5)
                                 elif prob > 20:
-                                    button.show_prob(3)
+                                    button.show_prob(4)
                                 elif prob > 10:
-                                    button.show_prob(2)
+                                    button.show_prob(3)
                                 elif prob > 0:
-                                    button.show_prob(1)  
+                                    button.show_prob(2)  
                         print(row,col, self.prob[row][col])              
         print('done')
 
@@ -508,34 +508,25 @@ class Minesweeper:
                 # for debug
                 # print(self.has_shown_neighbour(row,col))
                 if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
-                    mInput = self.createInput(row,col)
-                    mInput[3][3]=-2
-                    notABomb_model = Model("./notABomb.mzn")
-                    gecode = Solver.lookup("gecode")
-                    instance = Instance(gecode, notABomb_model)
-                    instance["grid"] = mInput
-                    print("Finding # results that it is a bomb ....")
-                    result = instance.solve(all_solutions= True)
-                    nMresult = 0
-                    if result:
-                        nMresult=result.statistics["solutions"]
-                    if nMresult>0:
-                        mInput[3][3]=-5
-                        isABomb_model = Model("./isABomb.mzn")
+                    input = self.createInput(row,col)
+                    input[3][3]=-2
+                    instanceNM = self.createInstance("./notABomb.mzn",input.copy())
+                    input[3][3]=-5
+                    instanceM = self.createInstance("./isABomb.mzn",input)
 
-                        # Create a MiniZinc instance for each model
-                        instance = Instance(gecode, isABomb_model)
-                        instance["grid"] = mInput
-                        print("Finding # results that it isn't a bomb ........")
-                        result = instance.solve(all_solutions= True)
-                        nNotMresult = 0
-                        if result:
-                            nNotMresult=result.statistics["solutions"]
-                        if nNotMresult<1:
-                            prob = 100
-                        else:
-                            prob = nMresult/(nMresult+nNotMresult)*100
-                    print(prob)
+                    if(instanceNM.solve().status==Status.UNSATISFIABLE):
+                        self.prob[row][col] = 0
+                    elif(instanceM.solve().status==Status.UNSATISFIABLE):
+                        self.prob[row][col] = 100
+                    else:
+                        nMresult = instanceNM.solve(all_solutions= True).statistics["nSolutions"]
+                        print(nMresult)
+                        nNotMresult= instanceM.solve(all_solutions= True).statistics["nSolutions"]
+                        print(nNotMresult)
+                        prob = nMresult/(nMresult+nNotMresult)*100
+                        self.prob[row][col] = prob
+                    print(row,col,self.prob[row][col])
+                    print("")
         print("done")
        
 
