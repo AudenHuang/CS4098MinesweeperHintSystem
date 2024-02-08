@@ -1,6 +1,6 @@
 %takes in 3 blocks to up, down, left, right to the targetting blocks
-int: Width = 7;
-int: Height = 7;
+int: Width;
+int: Height;
 
 % data from python
 array[1..Width, 1..Height] of -4..8: grid;
