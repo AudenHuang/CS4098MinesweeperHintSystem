@@ -112,6 +112,9 @@ class Minesweeper:
         :param mines_amount: int
         '''
         self.game_times += 1
+        # self.init_board()
+        self.current_board = np.full((self.row_size, self.col_size), -1)
+        self.prob = np.full((self.row_size, self.col_size), -1)
         self.first_click = True
         self.first_click_button = None
         self.is_over = False
@@ -123,9 +126,6 @@ class Minesweeper:
             button.reset()
             button.bind('<Button-1>', self.lclicked_wrapper(button))
             button.bind('<Button-2>', self.rclicked_wrapper(button))
-        # Place mines randomly.
-        #self.init_random_mines()
-        # Reset remaining mines label and newgame button.
         self.remain_label2.config(text=self.remaining_mines)
         self.newgame_button.config(image=self.img_sun_normal)
 
@@ -150,8 +150,6 @@ class Minesweeper:
         for button in self.buttons:
             button.bind('<Button-1>', self.lclicked_wrapper(button))
             button.bind('<Button-2>', self.rclicked_wrapper(button))
-        # for debug
-        # print(self.current_board)
 
     def init_random_mines(self):
         '''Initialize mines randomly.
@@ -228,6 +226,9 @@ class Minesweeper:
             self.first_click_button = button            
             self.init_random_mines()
             self.first_click = False
+            # for debug
+            print(self.current_board)
+            print(self.prob)
         
         # Do nothing if it's visible or it's flagged.
         if button.is_show() or button.is_flag():
@@ -311,8 +312,6 @@ class Minesweeper:
                 return False
         self.newgame_button.config(image=self.img_sun_win)
         return True
-        #else:
-            #return False
 
     def guess_move(self):
         '''Return an unclick button.
