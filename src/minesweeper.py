@@ -606,6 +606,7 @@ class Minesweeper:
                             else:
                                 bomb = 0
                             self.prob[row][col] = prob
+                            prob = round(prob, 2)
                             file_path = '../../test/smart_output.csv'
                             if os.path.exists(file_path):
                                 # Append data to existing CSV file
@@ -613,7 +614,7 @@ class Minesweeper:
                                     writer = csv.writer(file)
                                     writer.writerow([prob, bomb])
                             else:
-                                # Create new CSV file and write headers
+                                # Create new CSV file and write headers with data
                                 with open(file_path, mode='w', newline='') as file:
                                     writer = csv.writer(file)
                                     writer.writerow(["Probability", "IsAMine"])
