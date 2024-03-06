@@ -623,7 +623,7 @@ class Minesweeper:
                         results[(row, col)]['is_mine'] =  num_solutions
                     elif type == "not_mine":
                         results[(row, col)]['not_mine'] = num_solutions
-                    print(None not in results[(row, col)].values())
+                    print(None not in results[(row, col)].values(), num_solutions)
                     if None not in results[(row, col)].values():
                         num_is_mine_sol = results[(row, col)]["is_mine"]
                         num_not_mine_sol = results[(row, col)]["not_mine"]
