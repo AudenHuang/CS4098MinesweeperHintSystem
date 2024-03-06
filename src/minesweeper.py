@@ -2,12 +2,14 @@ import os
 from tkinter import *
 from tkinter import messagebox
 from FieldButton import *
+from Helper import *
 import random
 # import minizinc
 from minizinc import Instance, Model, Solver, Status
 import numpy as np
 import csv
-from concurrent.futures import ProcessPoolExecutor
+import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 class Minesweeper:
     '''Minesweeper Class:
@@ -496,7 +498,7 @@ class Minesweeper:
         result = instance.solve()
         return result.status
 
-
+        
     def hint_prob(self):
         self.showprob_button.config(text="Update_Prob")
         for row in range(self.row_size):
@@ -546,8 +548,6 @@ class Minesweeper:
                                         writer = csv.writer(file)
                                         writer.writerow(["Probability", "IsABomb"])
                                         writer.writerow([prob, bomb])
-                            
-
                                 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)             
         print('done')
@@ -558,72 +558,103 @@ class Minesweeper:
         self.output_text.insert(END, message)
         # Auto-scroll to the bottom
         self.output_text.see(END)
-        
+    # def hint_prob_smart_helper(self, row,col):
+    #     tasks = []
+    #     with ProcessPoolExecutor() as executor:
+    #         num_mine_sol = 0
+    #         num_safe_sol = 0
+    #         input_grid = self.createInput(row,col)
+    #         input_grid[row][col] = -2  # For not a bomb
+    #         tasks.append(executor.submit(self.solve_minizinc_instance, "./notABomb.mzn", 7, 7, input_grid.copy(), True))
+
+    #         input_grid[row][col] = -5  # For is a bomb
+    #         tasks.append(executor.submit(self.solve_minizinc_instance, "./isABomb.mzn", 7, 7, input_grid,True))
+    #         for future in concurrent.futures.as_completed(tasks):
+    #             result = future.result()
+            
+    #         return
+    
     def hint_prob_smart(self):
         self.showprob_smart_button.config(text="Update_Prob_Smart")
-        for row in range(self.row_size):
-            for col in range(self.col_size):
-                # for debug
-                # print(self.has_shown_neighbour(row,col))
-                if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
-                    if self.is_not_certain(row,col):
-                        self.prob[row][col] = -1
-                        button = self.board[row][col]
-                        input = self.createInput2()
-                        input[row][col]=-2
-                        instanceNM = self.createInstance("./notABomb.mzn",16,16,input.copy())
-                        input[row][col]=-5
-                        instanceM = self.createInstance("./isABomb.mzn",16,16,input)
-                        if(instanceNM.solve().status==Status.UNSATISFIABLE):
-                            self.prob[row][col] = 0
-                            button.show_prob(1)
-                        elif(instanceM.solve().status==Status.UNSATISFIABLE):
-                            self.prob[row][col] = 100
-                            button.show_prob(12)
-                        else:
-                            input = self.createInput(row,col)
-                            print(input)
-                            input[3][3]=-2
-                            instanceNM = self.createInstance("./notABomb.mzn",7,7,input.copy())
-                            input[3][3]=-5
-                            instanceM = self.createInstance("./isABomb.mzn",7,7,input)
-                            
-                            nMresult = instanceNM.solve(all_solutions= True).statistics["nSolutions"]
-                            # nMresult =  0
-                            # for solution in instanceNM.solve(all_solutions= True):
-                            #    nMresult = nMresult+1
-                            print("")
-                            print(nMresult)
-                            nNotMresult= instanceM.solve(all_solutions= True).statistics["nSolutions"]
-                            # nNotMresult= 0
-                            # for solution in instanceM.solve(all_solutions= True):
-                            #     nNotMresult= nNotMresult + 1
-                            print(nNotMresult)
-                            prob = nMresult/(nMresult+nNotMresult)*100
-                            bomb =-999
-                            if button.value == -1:
-                                bomb = 1
-                            else:
-                                bomb = 0
-                            self.prob[row][col] = prob
-                            file_path = '../test/smart_output.csv'
-                            if os.path.exists(file_path):
-                                # Append data to existing CSV file
-                                with open(file_path, mode='a', newline='') as file:
-                                    writer = csv.writer(file)
-                                    writer.writerow([prob, bomb])
-                            else:
-                                # Create new CSV file and write headers
-                                with open(file_path, mode='w', newline='') as file:
-                                    writer = csv.writer(file)
-                                    writer.writerow(["Probability", "IsABomb"])
-                                    writer.writerow([prob, bomb])
+        tasks = []
+        # Initialize an empty dictionary to store results
+        results = {}
+        resultsProb = {}
+        
+        with ProcessPoolExecutor() as executor:
+            for row in range(self.row_size):
+                for col in range(self.col_size):
 
-                            self.set_button_colour(button,prob)
-                            self.display_prob(button, prob, row, col)
+                    # for debug
+                    # print(self.has_shown_neighbour(row,col))
+                    if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+                        if self.is_not_certain(row,col):
+                            self.prob[row][col] = -1
+                            input = self.createInput2()
+                            input[row][col]=-2
+                            instanceNM = self.createInstance("./notABomb.mzn",16,16,input.copy())
+                            input[row][col]=-5
+                            instanceM = self.createInstance("./isABomb.mzn",16,16,input)
+                            if(instanceNM.solve().status==Status.UNSATISFIABLE):
+                                self.prob[row][col] = 0
+                            elif(instanceM.solve().status==Status.UNSATISFIABLE):
+                                self.prob[row][col] = 100
+                            else:
+                                mine =-999
+                                button = self.board[row][col]
+                                if button.value == -1:
+                                    mine = 1
+                                else:
+                                    mine = 0
+                                input_grid = self.createInput(row,col)
+                                input_grid[3][3] = -2  
+                                future = executor.submit(Helper.solve_minizinc_instance, "./notABomb.mzn", 7, 7, input_grid.copy(), True)
+                                tasks.append((future, row, col, False,"is_mine", mine))
+                                input_grid[3][3] = -5  
+                                future =executor.submit(Helper.solve_minizinc_instance, "./isABomb.mzn", 7, 7, input_grid,True)
+                                tasks.append((future, row, col,False, "not_mine", mine))
+            print("Done Adding Tasks")
+            for future, row, col, certain, type, mine in tasks:
+                num_solutions = future.result()
+                if not certain:
+                    if (row, col) not in results:
+                        results[(row, col)] = {'is_mine': None, 'not_mine': None}
+                    if type == "is_mine":
+                        results[(row, col)]['is_mine'] =  num_solutions
+                    elif type == "not_mine":
+                        results[(row, col)]['not_mine'] = num_solutions
+                    print(None not in results[(row, col)].values())
+                    if None not in results[(row, col)].values():
+                        num_is_mine_sol = results[(row, col)]["is_mine"]
+                        num_not_mine_sol = results[(row, col)]["not_mine"]
+                        prob = num_is_mine_sol/(num_is_mine_sol+num_not_mine_sol)*100
+                        print(prob)
+                        file_path = '../test/smart_output.csv'
+                        if os.path.exists(file_path):
+                            # Append data to existing CSV file
+                            with open(file_path, mode='a', newline='') as file:
+                                writer = csv.writer(file)
+                                writer.writerow([prob, mine])
+                        else:
+                            # Create new CSV file and write headers
+                            with open(file_path, mode='w', newline='') as file:
+                                writer = csv.writer(file)
+                                writer.writerow(["Probability", "IsABomb"])
+                                writer.writerow([prob, mine])
+        
+
+                    
+                
+
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
        
+    def update_cell_ui(self, button, prob, row, col):
+        # Set button color based on probability
+        self.set_button_colour(button, prob)
+
+        # Update probability information
+        self.display_prob(button, prob, row, col)
 
     def open_mark_certain(self):
         for row in range(self.row_size):
