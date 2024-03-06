@@ -381,7 +381,7 @@ class Minesweeper:
         start_c = max(0, col - 3)
         end_c = min(16, col + 4)
         input[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
-        # isABomb
+        # isAMine
         for i in range(7):
             for j in range(7):
                 if input[i][j] == -1:
@@ -546,7 +546,7 @@ class Minesweeper:
                                     # Create new CSV file and write headers
                                     with open(file_path, mode='w', newline='') as file:
                                         writer = csv.writer(file)
-                                        writer.writerow(["Probability", "IsABomb"])
+                                        writer.writerow(["Probability", "IsAMine"])
                                         writer.writerow([prob, bomb])
                                 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)             
@@ -639,7 +639,7 @@ class Minesweeper:
                             # Create new CSV file and write headers
                             with open(file_path, mode='w', newline='') as file:
                                 writer = csv.writer(file)
-                                writer.writerow(["Probability", "IsABomb"])
+                                writer.writerow(["Probability", "IsAMine"])
                                 writer.writerow([prob, mine])
         
 
