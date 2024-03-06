@@ -55,10 +55,6 @@ constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Wid
  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
 
-% constraint forall(i in 1..Width, j in 1..Height where outputgrid[i,j]>=0)(
- 
-% );
-
 
 solve satisfy;
 
