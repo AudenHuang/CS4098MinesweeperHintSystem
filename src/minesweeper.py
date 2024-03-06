@@ -529,7 +529,7 @@ class Minesweeper:
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
                                 self.display_prob(button, prob, row, col)
-                                file_path = '../test/dumb_output.csv'
+                                file_path = '../../test/dumb_output.csv'
                                 bomb =-999
                                 if button.value == -1:
                                     bomb = 1
@@ -606,7 +606,7 @@ class Minesweeper:
                             else:
                                 bomb = 0
                             self.prob[row][col] = prob
-                            file_path = '../test/smart_output.csv'
+                            file_path = '../../test/smart_output.csv'
                             if os.path.exists(file_path):
                                 # Append data to existing CSV file
                                 with open(file_path, mode='a', newline='') as file:
