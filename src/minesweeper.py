@@ -120,6 +120,8 @@ class Minesweeper:
         scrollbar.grid(row=self.row_size+5, column=self.col_size, sticky='nsew')
         self.output_text['yscrollcommand'] = scrollbar.set
         self.output_text.bind("<Key>", self.make_text_read_only)
+        # Unmute if you want to enable the first click to be a mine
+        # self.init_random_mines()
 
     def make_text_read_only(self, event):
         return "break"
@@ -148,6 +150,8 @@ class Minesweeper:
             button.bind('<Button-2>', self.rclicked_wrapper(button))
         self.remain_label2.config(text=self.remaining_mines)
         self.newgame_button.config(image=self.img_sun_normal)
+        # Unmute if you want to enable the first click to be a mine
+        # self.init_random_mines()
 
     def init_board(self):
         '''Initialize game board with buttons.
@@ -176,8 +180,10 @@ class Minesweeper:
         '''
         mines = self.mines_amount
         while mines:
+            # Mute if you want to enable the first xlick to be a mine
             buttons = self.get_adjecent_grids(self.first_click_button.x, self.first_click_button.y, self.row_size,self.col_size,self.board)
             buttons.append(self.first_click_button)
+            #--------------------------------------------------------
             
             #flag to check if random coordinates matches the initial click's 9 grids
             match = True    
@@ -186,11 +192,13 @@ class Minesweeper:
             while match:
                 row = random.choice(range(self.row_size))
                 col = random.choice(range(self.col_size))
-                match = False   
+                match = False 
+                # Mute if you want to enable the first click to be a mine
                 for b in buttons:
                     if (row == b.x) and (col == b.y):
                         match = True
                         break
+                #--------------------------------------------------------
                         
             if self.board[row][col].place_mine():
                 self.mines.append(self.board[row][col])
@@ -242,10 +250,12 @@ class Minesweeper:
     def lclicked(self, button):
         '''Left click action on given button.
         '''
+        # Mute if you want to enable the first click to be a mine
         if self.first_click == True:
             self.first_click_button = button            
             self.init_random_mines()
             self.first_click = False
+        #--------------------------------------------------------
             
         
         # Do nothing if it's visible or it's flagged.
@@ -454,23 +464,26 @@ class Minesweeper:
                         input = self.createInput2()
                         input[row][col]=-2
                         instanceNM=self.createInstance("./notABomb.mzn",16,16,input)
-                        button = self.board[row][col]
+                        
                         if instanceNM.solve().status== Status.UNSATISFIABLE:
-                            button.show_prob(1)
+                            self.set_button_colour( 0, row, col)
                             self.prob[row][col] = 0
                             
                         else:
                             input[row][col]=-5
                             instanceM = self.createInstance("./isABomb.mzn",16,16,input)
                             if instanceM.solve().status== Status.UNSATISFIABLE:
-                                button.show_prob(12)
+                                self.set_button_colour( 100, row, col)
                                 self.prob[row][col] = 100
                             else:
-                                button.show_prob(0)
+                                self.set_button_colour( -1, row, col)
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
 
-    def set_button_colour(self, button, prob):
-        if prob >= 90:
+    def set_button_colour(self, prob, row, col):
+        button = self.board[row][col]
+        if prob ==100:
+            button.show_prob(12)
+        elif prob >= 90:
             button.show_prob(11)
         elif prob >= 80:
             button.show_prob(10)
@@ -490,6 +503,10 @@ class Minesweeper:
             button.show_prob(3)
         elif prob > 0:
             button.show_prob(2) 
+        elif prob == 0:
+            button.show_prob(1)
+        else:
+            button.show_prob(0) 
 
 
     def can_be_x(self, input, r,c,center):
@@ -509,20 +526,20 @@ class Minesweeper:
                 if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
                     if self.is_not_certain(row,col):
                         self.prob[row][col] = -1
-                        button = self.board[row][col]
+                        
                         # input = self.createInput(row,col)
                         input = self.createInput2()
                         input[row][col]=-5
                         instance = self.createInstance("./isABomb.mzn",16,16,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
                             self.prob[row][col] = 100
-                            button.show_prob(12)
+                            self.set_button_colour( 100, row, col)
                         else:
                             input[row][col]= -2 
                             instance = self.createInstance("./notABomb.mzn",16,16,input)
                             if instance.solve().status== Status.UNSATISFIABLE:
                                 self.prob[row][col] = 0
-                                button.show_prob(1)
+                                self.set_button_colour( 0, row, col)
                             else:
                                 denominator = 1.0
                                 for i in range(1,9):
@@ -530,9 +547,10 @@ class Minesweeper:
                                         denominator = denominator+1.0
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
-                                self.display_prob(button, prob, row, col)
+                                self.display_prob(prob, row, col)
                                 file_path = '../../test/dumb_output.csv'
                                 bomb =-999
+                                button = self.board[row][col]
                                 if button.value == -1:
                                     bomb = 1
                                 else:
@@ -551,35 +569,21 @@ class Minesweeper:
                                 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)             
         print('done')
-    def display_prob(self, button, prob, row, col):
-        self.set_button_colour(button,prob)
+    def display_prob(self, prob, row, col):
+        
+        self.set_button_colour(prob, row,col)
         # messagebox.showinfo("Probability", f"Probability of grid ({row+1}, {col+1}) being a mine: {self.prob[row][col]}%")
-        message = f"Probability of grid ({row+1}, {col+1}) being a mine: {self.prob[row][col]}%\n"
+        message = f"Probability of grid ({row+1}, {col+1}) being a mine: {prob}%\n"
         self.output_text.insert(END, message)
         # Auto-scroll to the bottom
         self.output_text.see(END)
-    # def hint_prob_smart_helper(self, row,col):
-    #     tasks = []
-    #     with ProcessPoolExecutor() as executor:
-    #         num_mine_sol = 0
-    #         num_safe_sol = 0
-    #         input_grid = self.createInput(row,col)
-    #         input_grid[row][col] = -2  # For not a bomb
-    #         tasks.append(executor.submit(self.solve_minizinc_instance, "./notABomb.mzn", 7, 7, input_grid.copy(), True))
 
-    #         input_grid[row][col] = -5  # For is a bomb
-    #         tasks.append(executor.submit(self.solve_minizinc_instance, "./isABomb.mzn", 7, 7, input_grid,True))
-    #         for future in concurrent.futures.as_completed(tasks):
-    #             result = future.result()
-            
-    #         return
-    
     def hint_prob_smart(self):
         self.showprob_smart_button.config(text="Update_Prob_Smart")
         tasks = []
         # Initialize an empty dictionary to store results
         results = {}
-        resultsProb = {}
+        resultsProb = []
         
         with ProcessPoolExecutor() as executor:
             for row in range(self.row_size):
@@ -597,8 +601,10 @@ class Minesweeper:
                             instanceM = self.createInstance("./isABomb.mzn",16,16,input)
                             if(instanceNM.solve().status==Status.UNSATISFIABLE):
                                 self.prob[row][col] = 0
+                                self.set_button_colour(0, row,col)
                             elif(instanceM.solve().status==Status.UNSATISFIABLE):
                                 self.prob[row][col] = 100
+                                self.set_button_colour(100, row,col)
                             else:
                                 mine =-999
                                 button = self.board[row][col]
@@ -628,8 +634,10 @@ class Minesweeper:
                         num_is_mine_sol = results[(row, col)]["is_mine"]
                         num_not_mine_sol = results[(row, col)]["not_mine"]
                         prob = num_is_mine_sol/(num_is_mine_sol+num_not_mine_sol)*100
-                        print(prob)
                         prob = round(prob, 2)
+                        print(prob)
+                        #Append the grid location and its probability data into resultsProb for UI update 
+                        resultsProb.append((row,col,prob))
                         file_path = '../../test/smart_output.csv'
                         if os.path.exists(file_path):
                             # Append data to existing CSV file
@@ -642,20 +650,13 @@ class Minesweeper:
                                 writer = csv.writer(file)
                                 writer.writerow(["Probability", "IsAMine"])
                                 writer.writerow([prob, mine])
-        
-
-                    
-                
+        print("calculation complete")
+        for row, col, prob in resultsProb:
+            self.display_prob( prob, row, col)
 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
        
-    def update_cell_ui(self, button, prob, row, col):
-        # Set button color based on probability
-        self.set_button_colour(button, prob)
-
-        # Update probability information
-        self.display_prob(button, prob, row, col)
 
     def open_mark_certain(self):
         for row in range(self.row_size):
