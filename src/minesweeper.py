@@ -629,6 +629,7 @@ class Minesweeper:
                         num_not_mine_sol = results[(row, col)]["not_mine"]
                         prob = num_is_mine_sol/(num_is_mine_sol+num_not_mine_sol)*100
                         print(prob)
+                        prob = round(prob, 2)
                         file_path = '../../test/smart_output.csv'
                         if os.path.exists(file_path):
                             # Append data to existing CSV file
