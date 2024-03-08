@@ -343,20 +343,27 @@ class Minesweeper:
 
     def guess_move(self):
         '''Return an unclick button.
-
         :return: button
         '''
-
         buttons = []
-        corners = [self.board[0][0], self.board[0][self.col_size-1],self.board[self.row_size-1][0],self.board[self.row_size-1][self.col_size-1]]
+        # corners = [self.board[0][0], self.board[0][self.col_size-1],self.board[self.row_size-1][0],self.board[self.row_size-1][self.col_size-1]]
         for button in self.buttons:
             if not button.is_show() and not button.is_flag():
                 buttons.append(button)
+        # If there are shown grid,
+        if (self.first_click):
+            lowest_prob_buttons = buttons[0]
+            for button in buttons:
+                if self.prob[lowest_prob_buttons.x][lowest_prob_buttons.y] == -1:
+                    lowest_prob_buttons = button
+                elif self.prob[button.x][button.y]<self.prob[lowest_prob_buttons.x][lowest_prob_buttons.y]:
+                    lowest_prob_buttons = button
+                return lowest_prob_buttons
 
-        for button in corners:
-            if not button.is_show() and not button.is_flag():
-                return button
-
+        # for button in corners:
+        #     if not button.is_show() and not button.is_flag():
+        #         return button
+            
         return random.choice(buttons)
 
     def has_shown_neighbour(self,r,c):
@@ -381,15 +388,17 @@ class Minesweeper:
                 return True
         return False
     
-    def createInput(self,row,col):
+    def createInput(self,row,col,sizer, sizec):
         '''Patameter: row's and colum's number of a grid
         Function: create a 7 by 7 input for the Minizinc model
         Return: the created input'''
+        indexr = round(sizer/2)
+        indexc = round(sizec/2)
         input = np.full((self.input_row_size, self.input_col_size), -4)
-        start_r = max(0, row - 3)
-        end_r = min(16, row + 4)
-        start_c = max(0, col - 3)
-        end_c = min(16, col + 4)
+        start_r = max(0, row - indexr+1)
+        end_r = min(16, row + indexr)
+        start_c = max(0, col - indexc +1)
+        end_c = min(16, col + indexc)
         input[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
         # isAMine
         for i in range(7):
@@ -432,6 +441,8 @@ class Minesweeper:
     def hint_solve(self):
         """Function: solve parts of the game bases on current board's information by using Minizinc.
         """
+        self.showprob_button.config(text="Show_Prob")
+        self.showprob_smart_button.config(text="Show_Prob_Smart")
         for row in range(self.row_size):
             for col in range(self.col_size):
                 # for debug
@@ -457,6 +468,8 @@ class Minesweeper:
                             self.rclicked(self.board[row][col]) 
             
     def hint_show_certain(self):
+        self.showprob_button.config(text="Show_Prob")
+        self.showprob_smart_button.config(text="Show_Prob_Smart")
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
@@ -517,6 +530,7 @@ class Minesweeper:
 
         
     def hint_prob(self):
+        self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.showprob_button.config(text="Update_Prob")
         for row in range(self.row_size):
             for col in range(self.col_size):
@@ -579,16 +593,17 @@ class Minesweeper:
         self.output_text.see(END)
 
     def hint_prob_smart(self):
+        self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Update_Prob_Smart")
-        tasks = []
+        
         # Initialize an empty dictionary to store results
+        tasks = {}
         results = {}
-        resultsProb = []
+
         
         with ProcessPoolExecutor() as executor:
             for row in range(self.row_size):
                 for col in range(self.col_size):
-
                     # for debug
                     # print(self.has_shown_neighbour(row,col))
                     if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
@@ -612,51 +627,53 @@ class Minesweeper:
                                     mine = 1
                                 else:
                                     mine = 0
-                                input_grid = self.createInput(row,col)
-                                input_grid[3][3] = -2  
-                                future = executor.submit(Helper.solve_minizinc_instance, "./notABomb.mzn", 7, 7, input_grid.copy(), True)
-                                tasks.append((future, row, col, False,"is_mine", mine))
-                                input_grid[3][3] = -5  
-                                future =executor.submit(Helper.solve_minizinc_instance, "./isABomb.mzn", 7, 7, input_grid,True)
-                                tasks.append((future, row, col,False, "not_mine", mine))
-            print("Done Adding Tasks")
-            for future, row, col, certain, type, mine in tasks:
+                                input_grid = self.createInput(row,col,7,7)
+                                for type in ["is_mine", "not_mine"]:
+                                    modified_input = input_grid.copy()
+                                    modified_input[3][3] = -2 if type == "is_mine" else -5
+                                    path = "./notABomb.mzn" if type == "is_mine" else "./isABomb.mzn"
+                                    future = executor.submit(Helper.solve_minizinc_instance, path, 7, 7, modified_input, True)
+                                    tasks[future] = (row, col, False, type, mine)
+
+            print("Done Adding",len(tasks), "Tasks")
+            for future in as_completed(tasks):
+                row, col, is_certain, type, is_mine = tasks[future]
                 num_solutions = future.result()
-                if not certain:
+                if (not is_certain):
                     if (row, col) not in results:
                         results[(row, col)] = {'is_mine': None, 'not_mine': None}
-                    if type == "is_mine":
-                        results[(row, col)]['is_mine'] =  num_solutions
-                    elif type == "not_mine":
-                        results[(row, col)]['not_mine'] = num_solutions
-                    print(None not in results[(row, col)].values(), num_solutions)
+                    
+                    results[(row, col)][type] = num_solutions
+                    print("one task done", num_solutions)
+                    # Check if both futures for the cell are completed
                     if None not in results[(row, col)].values():
                         num_is_mine_sol = results[(row, col)]["is_mine"]
                         num_not_mine_sol = results[(row, col)]["not_mine"]
-                        prob = num_is_mine_sol/(num_is_mine_sol+num_not_mine_sol)*100
+                        prob = (num_is_mine_sol / (num_is_mine_sol + num_not_mine_sol)) * 100 if (num_is_mine_sol + num_not_mine_sol) > 0 else 0
                         prob = round(prob, 2)
                         print(prob)
-                        #Append the grid location and its probability data into resultsProb for UI update 
-                        resultsProb.append((row,col,prob))
                         file_path = '../../test/smart_output.csv'
-                        if os.path.exists(file_path):
-                            # Append data to existing CSV file
-                            with open(file_path, mode='a', newline='') as file:
-                                writer = csv.writer(file)
-                                writer.writerow([prob, mine])
-                        else:
-                            # Create new CSV file and write headers
-                            with open(file_path, mode='w', newline='') as file:
-                                writer = csv.writer(file)
-                                writer.writerow(["Probability", "IsAMine"])
-                                writer.writerow([prob, mine])
+                        self.output_data(file_path, prob, is_mine)
+                        #Update UI
+                        self.display_prob( prob, row, col)
         print("calculation complete")
-        for row, col, prob in resultsProb:
-            self.display_prob( prob, row, col)
+
 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
-       
+    
+    def output_data(self, file_path, prob, mine):
+        if os.path.exists(file_path):
+            # Append data to existing CSV file
+            with open(file_path, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow([prob, mine])
+        else:
+            # Create new CSV file and write headers
+            with open(file_path, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Probability", "IsAMine"])
+                writer.writerow([prob, mine])        
 
     def open_mark_certain(self):
         for row in range(self.row_size):
