@@ -49,13 +49,13 @@ constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) 
 solve satisfy;
 
 %For debug
-output[show(outputgrid[1,1..7]),"\n"];
-output[show(outputgrid[2,1..7]),"\n"];
-output[show(outputgrid[3,1..7]),"\n"];
-output[show(outputgrid[4,1..7]),"\n"];
-output[show(outputgrid[5,1..7]),"\n"];
-output[show(outputgrid[6,1..7]),"\n"];
-output[show(outputgrid[7,1..7]),"\n"];
+% output[show(outputgrid[1,1..7]),"\n"];
+% output[show(outputgrid[2,1..7]),"\n"];
+% output[show(outputgrid[3,1..7]),"\n"];
+% output[show(outputgrid[4,1..7]),"\n"];
+% output[show(outputgrid[5,1..7]),"\n"];
+% output[show(outputgrid[6,1..7]),"\n"];
+% output[show(outputgrid[7,1..7]),"\n"];
 
 
 

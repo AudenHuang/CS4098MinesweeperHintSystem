@@ -50,14 +50,14 @@ constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Wid
 );
 solve satisfy;
 
-%For debug
-output[show(outputgrid[1,1..7]),"\n"];
-output[show(outputgrid[2,1..7]),"\n"];
-output[show(outputgrid[3,1..7]),"\n"];
-output[show(outputgrid[4,1..7]),"\n"];
-output[show(outputgrid[5,1..7]),"\n"];
-output[show(outputgrid[6,1..7]),"\n"];
-output[show(outputgrid[7,1..7]),"\n"];
+% %For debug
+% output[show(outputgrid[1,1..7]),"\n"];
+% output[show(outputgrid[2,1..7]),"\n"];
+% output[show(outputgrid[3,1..7]),"\n"];
+% output[show(outputgrid[4,1..7]),"\n"];
+% output[show(outputgrid[5,1..7]),"\n"];
+% output[show(outputgrid[6,1..7]),"\n"];
+% output[show(outputgrid[7,1..7]),"\n"];
 
 
 

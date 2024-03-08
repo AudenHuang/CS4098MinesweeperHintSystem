@@ -1,14 +1,15 @@
+import math
 import os
 from tkinter import *
 from tkinter import messagebox
 from FieldButton import *
 from MZSolver import *
+from BoardSizePopup import *
 import random
 # import minizinc
 from minizinc import Instance, Model, Solver, Status
 import numpy as np
 import csv
-import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 class Minesweeper:
@@ -48,8 +49,6 @@ class Minesweeper:
         self.board = []
     
 
-        self.input_row_size = 7
-        self.input_col_size = 7
         self.current_board = np.full((self.row_size, self.col_size), -1)
         self.prob = np.full((self.row_size, self.col_size), -1)
         
@@ -106,7 +105,7 @@ class Minesweeper:
 
         self.showprob_smart_button= Button(self.frame, text=" Show_Prob_Smart ")
         self.showprob_smart_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.showprob_smart_button.bind("<Button-1>", lambda Button: self.hint_prob_smart())
+        self.showprob_smart_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_button_click())
 
         self.open_button = Button(self.frame, text="All_Certain")
         self.open_button.bind("<Button-1>", lambda Button: self.open_mark_certain())
@@ -377,36 +376,86 @@ class Minesweeper:
                 return True
         return False
     
-    def has_shown_neighbour_input(self,mInput,r,c):
+    def has_shown_neighbour_input(self,mInput,r,c,row_size,col_size):
         '''Patameter: a 2d array, row's and colum's number of a grid in the given array
         Function: check if any of the adjecent grids in the 2d array is shown
         Return: True if there is a shown neighbor and False if there isn't
         '''
-        adjecent_grids  = self.get_adjecent_grids(r,c,self.input_row_size,self.input_col_size,mInput)
+        adjecent_grids  = self.get_adjecent_grids(r,c,row_size,col_size,mInput)
         for grid in adjecent_grids:
             if grid >=0:
                 return True
         return False
     
-    def createInput(self,row,col,sizer, sizec):
-        '''Patameter: row's and colum's number of a grid
-        Function: create a 7 by 7 input for the Minizinc model
-        Return: the created input'''
-        indexr = round(sizer/2)
-        indexc = round(sizec/2)
-        input = np.full((self.input_row_size, self.input_col_size), -4)
-        start_r = max(0, row - indexr+1)
-        end_r = min(16, row + indexr)
-        start_c = max(0, col - indexc +1)
-        end_c = min(16, col + indexc)
-        input[start_r-row+3:end_r-row+3, start_c-col+3:end_c-col+3] = self.current_board[start_r:end_r, start_c:end_c].copy()
-        # isAMine
-        for i in range(7):
-            for j in range(7):
-                if input[i][j] == -1:
-                    if not self.has_shown_neighbour_input(input,i,j):
-                        input[i][j] = -3
+    def createInput(self, row, col, slice_rows=7, slice_cols=7):
+        # Ensure the slice size does not exceed the board dimensions
+        slice_rows = min(slice_rows, 16)
+        slice_cols = min(slice_cols, 16)
+        
+        input = np.full((slice_rows, slice_cols), -4)  # Use variable dimensions
+        
+        # Calculate the half sizes for rows and columns, adjusting for odd/even dimensions
+        half_rows = slice_rows // 2
+        half_cols = slice_cols // 2
+        
+        start_r = max(0, row - half_rows)
+        end_r = min(16, row + half_rows + (1 if slice_rows % 2 != 0 else 0))
+        start_c = max(0, col - half_cols)
+        end_c = min(16, col + half_cols + (1 if slice_cols % 2 != 0 else 0))
+        
+        # Adjust the indices for filling the input array
+        input_row_start = max(0, half_rows - row)
+        input_col_start = max(0, half_cols - col)
+        
+        input[input_row_start:input_row_start + end_r - start_r, input_col_start:input_col_start + end_c - start_c] = self.current_board[start_r:end_r, start_c:end_c].copy()
+        
+        # Adjust 'isAMine' logic as needed
+        for i in range(slice_rows):
+            for j in range(slice_cols):
+                if input[i][j] == -1 and not self.has_shown_neighbour_input(input, i, j,slice_rows,slice_cols):
+                    input[i][j] = -3
+        
         return input
+    # def createInput(self,row,col,sizer, sizec):
+    #     '''Patameter: row's and colum's number of a grid, sizer for required row size and sizec for required column size
+    #     Function: create a  sizer by sizec input for the Minizinc model
+    #     Return: the created input'''
+    #     indexr = round(sizer/2)-1
+    #     indexc = round(sizec/2)-1
+    #     input = np.full((sizer, sizec), -4)
+    #     start_r = max(0, row - indexr)
+    #     end_r = min(16, row + indexr+1)
+    #     start_c = max(0, col - indexc)
+    #     end_c = min(16, col + indexc+1)
+    #     print(start_r,end_r,start_c, end_c)
+    #     input[start_r-row+(indexr):end_r-row+(indexr), start_c-col+(indexc):end_c-col+(indexc)] = self.current_board[start_r:end_r, start_c:end_c].copy()
+    #     # isAMine
+    #     for i in range(sizer):
+    #         for j in range(sizec):
+    #             if input[i][j] == -1:
+    #                 if not self.has_shown_neighbour_input(input,i,j):
+    #                     input[i][j] = -3
+    #     print(input)
+    #     return input
+    # def createInput(self,row,col,sizer, sizec):
+    #     '''Patameter: row's and colum's number of a grid, sizer for required row size and sizec for required column size
+    #     Function: create a  sizer by sizec input for the Minizinc model
+    #     Return: the created input'''
+    #     indexr = round(sizer/2)-1
+    #     indexc = round(sizec/2)-1
+    #     input = np.full((sizer, sizec), -4)
+    #     start_r = max(0, row - indexr)
+    #     end_r = min(16, row + indexr+1)
+    #     start_c = max(0, col - indexc)
+    #     end_c = min(16, col + indexc+1)
+    #     input[start_r-row+(indexr):end_r-row+(indexr), start_c-col+(indexc):end_c-col+(indexc)] = self.current_board[start_r:end_r, start_c:end_c].copy()
+    #     # isAMine
+    #     for i in range(sizer):
+    #         for j in range(sizec):
+    #             if input[i][j] == -1:
+    #                 if not self.has_shown_neighbour_input(input,i,j):
+    #                     input[i][j] = -3
+    #     return input
 
     def is_not_certain(self, row, col):
         if self.prob[row][col] == 100:
@@ -577,7 +626,7 @@ class Minesweeper:
         # Auto-scroll to the bottom
         self.output_text.see(END)
 
-    def hint_prob_smart(self):
+    def hint_prob_smart(self, row_size, col_size):
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Update_Prob_Smart")
         # Initialize an empty dictionary to store results
@@ -594,9 +643,9 @@ class Minesweeper:
                             self.prob[row][col] = -1
                             input = self.createInput2()
                             input[row][col]=-2
-                            instanceNM = self.createInstance("./notABomb.mzn",16,16,input.copy())
+                            instanceNM = self.createInstance("./notABomb.mzn",self.row_size,self.col_size,input.copy())
                             input[row][col]=-5
-                            instanceM = self.createInstance("./isABomb.mzn",16,16,input)
+                            instanceM = self.createInstance("./isABomb.mzn",self.row_size,self.col_size,input)
                             if(instanceNM.solve().status==Status.UNSATISFIABLE):
                                 self.prob[row][col] = 0
                                 self.set_button_colour(0, row,col)
@@ -604,12 +653,19 @@ class Minesweeper:
                                 self.prob[row][col] = 100
                                 self.set_button_colour(100, row,col)
                             else:
-                                input_grid = self.createInput(row,col,7,7)
+                                input_grid = []
+                                if (row_size== self.row_size and col_size == self.col_size):
+                                    input_grid = self.createInput2()
+                                else:
+                                    input_grid = self.createInput(row,col,row_size,col_size)
                                 for type in ["is_mine", "not_mine"]:
+
+                                    rIndex = math.ceil(row_size/2) - 1 if row_size % 2 != 0 else row_size/2
+                                    cIndex = math.ceil(col_size/2) - 1 if col_size % 2 != 0 else col_size/2 
                                     modified_input = input_grid.copy()
-                                    modified_input[3][3] = -2 if type == "is_mine" else -5
+                                    modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
                                     path = "./notABomb.mzn" if type == "is_mine" else "./isABomb.mzn"
-                                    future = executor.submit(MZSolver.solve_minizinc_instance, path, 7, 7, modified_input, True)
+                                    future = executor.submit(MZSolver.solve_minizinc_instance, path, row_size, col_size, modified_input, True)
                                     tasks[future] = (row, col, False, type)
 
             print("Done Adding",len(tasks), "Tasks")
@@ -628,7 +684,10 @@ class Minesweeper:
                         prob = (num_is_mine_sol / (num_is_mine_sol + num_not_mine_sol)) * 100 if (num_is_mine_sol + num_not_mine_sol) > 0 else 0
                         prob = round(prob, 2)
                         print(prob)
-                        file_path = '../../test/smart_output.csv'
+                        filename = ''
+                        if (not (row_size == 7 and col_size == 7)):
+                            filename = '_'+str(row_size) +'_by_'+str(col_size)
+                        file_path = '../../test/smart_output'+filename+'.csv'
                         self.output_data(file_path, prob, row, col)
                         #Update UI
                         self.display_prob( prob, row, col)
@@ -637,6 +696,29 @@ class Minesweeper:
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
     
+    def on_show_prob_smart_button_click(self):
+        popup = BoardSizePopup(self.frame)
+        popup.grab_set()
+        self.frame.wait_window(popup)  # Wait for the popup to close
+
+        choice, row_size, col_size = popup.get_values()
+        if choice == "entire":
+            self.hint_prob_smart(self.row_size, self.col_size)  
+        else:
+            try:
+                # Convert row_size and col_size to integers
+                row_size = int(row_size)
+                col_size = int(col_size)
+                # If user input a size larger than the max size set the size to the max size
+                if row_size > self.row_size:
+                    row_size = self.row_size
+                if col_size > self.col_size:
+                    col_size = self.col_size
+                self.hint_prob_smart(row_size, col_size) 
+            except ValueError:
+                # Handle invalid input
+                print("Invalid input for row size or column size")
+
     def output_data(self, file_path, prob, row,col):
         button = self.board[row][col]
         if button.value == -1:
