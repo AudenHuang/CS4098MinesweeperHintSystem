@@ -1,5 +1,5 @@
 from minizinc import Instance, Model, Solver, Status
-class Helper:
+class MZSolver:
     @staticmethod
     def solve_minizinc_instance(model_path, width, height, grid_data,all_solutions=False):
         # Load MiniZinc model and solver

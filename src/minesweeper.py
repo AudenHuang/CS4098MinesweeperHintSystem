@@ -2,7 +2,7 @@ import os
 from tkinter import *
 from tkinter import messagebox
 from FieldButton import *
-from Helper import *
+from MZSolver import *
 import random
 # import minizinc
 from minizinc import Instance, Model, Solver, Status
@@ -561,30 +561,15 @@ class Minesweeper:
                                         denominator = denominator+1.0
                                 prob = (1.0/denominator)*100
                                 self.prob[row][col] = prob
+                                prob = round(prob, 2)
                                 self.display_prob(prob, row, col)
-                                file_path = '../../test/dumb_output.csv'
-                                bomb =-999
-                                button = self.board[row][col]
-                                if button.value == -1:
-                                    bomb = 1
-                                else:
-                                    bomb = 0
-                                if os.path.exists(file_path):
-                                    # Append data to existing CSV file
-                                    with open(file_path, mode='a', newline='') as file:
-                                        writer = csv.writer(file)
-                                        writer.writerow([prob, bomb])
-                                else:
-                                    # Create new CSV file and write headers
-                                    with open(file_path, mode='w', newline='') as file:
-                                        writer = csv.writer(file)
-                                        writer.writerow(["Probability", "IsAMine"])
-                                        writer.writerow([prob, bomb])
+                                file_path = '../../test/output.csv'
+                                self.output_data(file_path, prob, row, col)
                                 
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)             
         print('done')
+
     def display_prob(self, prob, row, col):
-        
         self.set_button_colour(prob, row,col)
         # messagebox.showinfo("Probability", f"Probability of grid ({row+1}, {col+1}) being a mine: {self.prob[row][col]}%")
         message = f"Probability of grid ({row+1}, {col+1}) being a mine: {prob}%\n"
@@ -595,12 +580,10 @@ class Minesweeper:
     def hint_prob_smart(self):
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Update_Prob_Smart")
-        
         # Initialize an empty dictionary to store results
         tasks = {}
         results = {}
 
-        
         with ProcessPoolExecutor() as executor:
             for row in range(self.row_size):
                 for col in range(self.col_size):
@@ -621,28 +604,21 @@ class Minesweeper:
                                 self.prob[row][col] = 100
                                 self.set_button_colour(100, row,col)
                             else:
-                                mine =-999
-                                button = self.board[row][col]
-                                if button.value == -1:
-                                    mine = 1
-                                else:
-                                    mine = 0
                                 input_grid = self.createInput(row,col,7,7)
                                 for type in ["is_mine", "not_mine"]:
                                     modified_input = input_grid.copy()
                                     modified_input[3][3] = -2 if type == "is_mine" else -5
                                     path = "./notABomb.mzn" if type == "is_mine" else "./isABomb.mzn"
-                                    future = executor.submit(Helper.solve_minizinc_instance, path, 7, 7, modified_input, True)
-                                    tasks[future] = (row, col, False, type, mine)
+                                    future = executor.submit(MZSolver.solve_minizinc_instance, path, 7, 7, modified_input, True)
+                                    tasks[future] = (row, col, False, type)
 
             print("Done Adding",len(tasks), "Tasks")
             for future in as_completed(tasks):
-                row, col, is_certain, type, is_mine = tasks[future]
+                row, col, is_certain, type = tasks[future]
                 num_solutions = future.result()
                 if (not is_certain):
                     if (row, col) not in results:
                         results[(row, col)] = {'is_mine': None, 'not_mine': None}
-                    
                     results[(row, col)][type] = num_solutions
                     print("one task done", num_solutions)
                     # Check if both futures for the cell are completed
@@ -653,27 +629,31 @@ class Minesweeper:
                         prob = round(prob, 2)
                         print(prob)
                         file_path = '../../test/smart_output.csv'
-                        self.output_data(file_path, prob, is_mine)
+                        self.output_data(file_path, prob, row, col)
                         #Update UI
                         self.display_prob( prob, row, col)
         print("calculation complete")
 
-
         self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
     
-    def output_data(self, file_path, prob, mine):
+    def output_data(self, file_path, prob, row,col):
+        button = self.board[row][col]
+        if button.value == -1:
+            is_mine = 1
+        else:
+            is_mine = 0
         if os.path.exists(file_path):
             # Append data to existing CSV file
             with open(file_path, mode='a', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow([prob, mine])
+                writer.writerow([prob, is_mine])
         else:
             # Create new CSV file and write headers
             with open(file_path, mode='w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Probability", "IsAMine"])
-                writer.writerow([prob, mine])        
+                writer.writerow([prob, is_mine])        
 
     def open_mark_certain(self):
         for row in range(self.row_size):
