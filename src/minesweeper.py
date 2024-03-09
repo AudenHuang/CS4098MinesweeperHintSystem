@@ -563,7 +563,8 @@ class Minesweeper:
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.check_certain2()
-        tasks = {}
+        is_mine_tasks = {}
+        not_mine_tasks = {}
         with ProcessPoolExecutor() as executor:
             for row in range(self.row_size):
                 for col in range(self.col_size):
@@ -577,37 +578,26 @@ class Minesweeper:
                             path = "./constraint.mzn"
                             modified_input[row][col]= -2
                             future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
-                            tasks[future] = (row, col, 'is_mine', modified_input)
-
-                            # result = MZSolver.solve_minizinc_instance(path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
-                            # if result == Status.UNSATISFIABLE:
-                            #     self.set_grid_colour(0, row, col)
-                            #     self.prob[row][col] = 0
-                            # else:
-                            #     modified_input[row][col]= -5
-                            #     result = MZSolver.solve_minizinc_instance(path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
-                            #     if result== Status.UNSATISFIABLE:
-                            #         self.set_grid_colour(100, row, col)
-                            #         self.prob[row][col] = 100
-                            #     else:
-                            #         self.set_grid_colour( -1, row, col)
-            for future in as_completed(tasks):
-                row, col, type, grid_data = tasks[future]
+                            # tasks[future] = (row, col, 'is_mine', modified_input)
+                            is_mine_tasks[future] = (row, col, modified_input)
+            for future in as_completed(is_mine_tasks):
+                row, col, grid_data = is_mine_tasks[future]
                 status = future.result()
-                if type == 'is_mine':
-                    if status == Status.UNSATISFIABLE:
-                        self.set_grid_colour(0, row, col)
-                        self.prob[row][col] = 0
-                    else:
-                        grid_data[row][col] = -5
-                        future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
-                        tasks[future] = (row, col, 'not_mine', modified_input)
+                if status == Status.UNSATISFIABLE:
+                    self.set_grid_colour(0, row, col)
+                    self.prob[row][col] = 0
                 else:
-                    if status == Status.UNSATISFIABLE:
-                        self.set_grid_colour(100, row, col)
-                        self.prob[row][col] = 100
-                    else:
-                        self.set_grid_colour( -1, row, col)
+                    grid_data[row][col] = -5
+                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, grid_data, False)
+                    not_mine_tasks[future] = (row, col)
+            for future in as_completed(not_mine_tasks):
+                row, col = not_mine_tasks[future]
+                status = future.result()             
+                if status == Status.UNSATISFIABLE:
+                    self.set_grid_colour(100, row, col)
+                    self.prob[row][col] = 100
+                else:
+                    self.set_grid_colour( -1, row, col)
 
         self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
         print("Done Certain")
@@ -752,7 +742,12 @@ class Minesweeper:
                             if(not self.prob[grid.x][grid.y] == 0):
                                 self.prob[grid.x][grid.y] = 0
                                 self.set_grid_colour(0, grid.x,grid.y)                
-
+    def adjust_indices(self, row, col, row_size, col_size, fullboard):
+        if not fullboard:
+            rIndex = math.ceil(row_size / 2) - 1 if row_size % 2 != 0 else row_size / 2
+            cIndex = math.ceil(col_size / 2) - 1 if col_size % 2 != 0 else col_size / 2
+            return int(rIndex), int(cIndex)
+        return row, col
 
     def hint_prob_smart(self, row_size, col_size):
         self.showprob_button.config(text="Show_Prob")
@@ -768,50 +763,42 @@ class Minesweeper:
                         if self.is_not_certain(row,col):
                                 input_grid = []
                                 fullboard = (row_size== self.row_size and col_size == self.col_size)
-                                if (fullboard):
-                                    input_grid = self.createInput2()
-                                else:
-                                    input_grid = self.createInput(row,col,row_size,col_size)
+                                input_grid = self.createInput2() if fullboard else self.createInput(row, col, row_size, col_size)
                                 for type in ["is_mine", "not_mine"]:
-                                    rIndex = row
-                                    cIndex = col
-                                    if (not fullboard):
-                                        rIndex = math.ceil(row_size/2) - 1 if row_size % 2 != 0 else row_size/2
-                                        cIndex = math.ceil(col_size/2) - 1 if col_size % 2 != 0 else col_size/2 
                                     modified_input = input_grid.copy()
+                                    rIndex, cIndex = self.adjust_indices(row, col, row_size, col_size, fullboard)
                                     modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
-                                    path = "./constraint.mzn" if type == "is_mine" else "./constraint.mzn"
+                                    path = "./constraint.mzn"
                                     future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
-                                    tasks[future] = (row, col, False, type)
+                                    tasks[future] = (row, col,type)
 
             print("Done Adding",len(tasks), "Tasks")
             for future in as_completed(tasks):
-                row, col, is_certain, type = tasks[future]
+                row, col, type = tasks[future]
                 num_solutions = future.result()
-                if (not is_certain):
-                    if (row, col) not in results:
-                        results[(row, col)] = {'is_mine': None, 'not_mine': None}
-                    results[(row, col)][type] = num_solutions
-                    print("one task done", num_solutions)
-                    # Check if both futures for the cell are completed
-                    if None not in results[(row, col)].values():
-                        num_is_mine_sol = results[(row, col)]["is_mine"]
-                        num_not_mine_sol = results[(row, col)]["not_mine"]
-                        prob = (num_is_mine_sol / (num_is_mine_sol + num_not_mine_sol)) * 100 if (num_is_mine_sol + num_not_mine_sol) > 0 else 0
-                        prob = round(prob, 2)
-                        print(prob)
-                        filename = ''
-                        if (not (row_size == 7 and col_size == 7)):
-                            if(row_size  ==self.row_size and col_size == self.col_size):
-                                filename = '_full_board'
-                            else:
-                                filename = '_'+str(row_size) +'_by_'+str(col_size)
-                        
-                        file_path = '../../test/smart_output'+filename+'.csv'
-                        self.prob[row][col] = prob
-                        self.output_data(file_path, prob, row, col)
-                        #Update UI
-                        self.display_prob( prob, row, col)
+                if (row, col) not in results:
+                    results[(row, col)] = {'is_mine': None, 'not_mine': None}
+                results[(row, col)][type] = num_solutions
+                print("one task done", num_solutions)
+                # Check if both futures for the cell are completed
+                if None not in results[(row, col)].values():
+                    num_is_mine_sol = results[(row, col)]["is_mine"]
+                    num_not_mine_sol = results[(row, col)]["not_mine"]
+                    prob = (num_is_mine_sol / (num_is_mine_sol + num_not_mine_sol)) * 100 if (num_is_mine_sol + num_not_mine_sol) > 0 else 0
+                    prob = round(prob, 2)
+                    print(prob)
+                    filename = ''
+                    if (not (row_size == 7 and col_size == 7)):
+                        if(row_size  ==self.row_size and col_size == self.col_size):
+                            filename = '_full_board'
+                        else:
+                            filename = '_'+str(row_size) +'_by_'+str(col_size)
+                    
+                    file_path = '../../test/smart_output'+filename+'.csv'
+                    self.prob[row][col] = prob
+                    self.output_data(file_path, prob, row, col)
+                    #Update UI
+                    self.display_prob( prob, row, col)
         print("calculation complete")
 
         self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
