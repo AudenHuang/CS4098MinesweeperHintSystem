@@ -1,7 +1,9 @@
 import math
 import os
+import sys
 from tkinter import *
 from tkinter import messagebox
+from DifficultyDialog import *
 from FieldButton import *
 from MZSolver import *
 from BoardSizePopup import *
@@ -28,19 +30,19 @@ class Minesweeper:
 
     '''
 
-    def __init__(self, master):
+    def __init__(self, master, row_size, col_size, mines_amount):
 
         self.frame = Frame(master)
-        self.frame.pack()
+        self.frame.pack(padx=20, pady=20)
         
         # Keep track of amount of games played and winned.
         self.game_times = 0
         self.win_times = 0
 
         # Default game setting is 16x16 with 40 mines.
-        self.row_size = 16
-        self.col_size = 16
-        self.mines_amount = 40
+        self.row_size = row_size
+        self.col_size = col_size
+        self.mines_amount = mines_amount
         self.remaining_mines = self.mines_amount
         self.flags = 0
         self.is_over = False
@@ -90,33 +92,49 @@ class Minesweeper:
         self.remain_label2 = Label(self.frame, text = self.mines_amount)
         self.remain_label2.grid(row = self.row_size+1, column = 4, columnspan = self.row_size, sticky=W)
 
-        # Initialize Hint  buttonㄋ.
+
+        # Initialize Hint  button.
+        base_row = self.row_size + 3  # Starting row for buttons below the game board
         self.solvecomp_button = Button(self.frame, text="Hint_Solve")
-        self.solvecomp_button.grid(row = self.row_size+1,column = 0, columnspan = self.col_size, sticky=E)
+        # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
+        self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
 
         self.show_certain_button = Button(self.frame, text="Hint_Certain")
-        self.show_certain_button.grid(row = self.row_size+1,column = 0, columnspan = self.col_size-5, sticky=E)
+        # self.show_certain_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size-5, sticky=E)
+        self.show_certain_button.grid(row=base_row, column=max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.show_certain_button.bind("<Button-1>", lambda Button: self.hint_show_certain())
 
         self.showprob_button = Button(self.frame, text=" Show_Prob ")
-        self.showprob_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size, sticky=E)
+        # self.showprob_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size, sticky=E)
+        self.showprob_button.grid(row=base_row, column=2 * max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_button.bind("<Button-1>", lambda Button: self.hint_prob())
 
         self.showprob_smart_button= Button(self.frame, text=" Show_Prob_Smart ")
-        self.showprob_smart_button.grid(row = self.row_size+2,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.showprob_smart_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_button_click())
+        # self.showprob_smart_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-5, sticky=E)
+        self.showprob_smart_button.grid(row=base_row + 1, column=0, columnspan=max(self.col_size // 2, 1), sticky=W+E)
+        self.showprob_smart_button.bind("<Button-1>", lambda Button: self.hint_prob_smart(7,7))
+
+
+
+        self.showprob_smart_test_button= Button(self.frame, text=" Test ")
+        # self.showprob_smart_test_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-10, sticky=E)
+        self.showprob_smart_test_button.grid(row=base_row + 1, column=max(self.col_size // 2, 1), columnspan=max(self.col_size // 2, 1), sticky=W+E)
+        self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_button_click())
+
 
         self.open_button = Button(self.frame, text="All_Certain")
         self.open_button.bind("<Button-1>", lambda Button: self.open_mark_certain())
 
+        
+
         # Create the scrollable text area
         self.output_text = Text(self.frame, height=10, width=50)
-        self.output_text.grid(row=self.row_size+5, column=0, columnspan=self.col_size, sticky="nsew")
+        self.output_text.grid(row=self.row_size+7, column=0, columnspan=self.col_size, sticky="nsew")
 
         # Create a Scrollbar and attach it to the text area
         scrollbar = Scrollbar(self.frame, command=self.output_text.yview)
-        scrollbar.grid(row=self.row_size+5, column=self.col_size, sticky='nsew')
+        scrollbar.grid(row=self.row_size+7, column=self.col_size, sticky='nsew')
         self.output_text['yscrollcommand'] = scrollbar.set
         self.output_text.bind("<Key>", self.make_text_read_only)
         # Unmute if you want to enable the first click to be a mine
@@ -389,8 +407,8 @@ class Minesweeper:
     
     def createInput(self, row, col, slice_rows=7, slice_cols=7):
         # Ensure the slice size does not exceed the board dimensions
-        slice_rows = min(slice_rows, 16)
-        slice_cols = min(slice_cols, 16)
+        slice_rows = min(slice_rows, self.row_size)
+        slice_cols = min(slice_cols, self.col_size)
         
         input = np.full((slice_rows, slice_cols), -4)  # Use variable dimensions
         
@@ -399,9 +417,9 @@ class Minesweeper:
         half_cols = slice_cols // 2
         
         start_r = max(0, row - half_rows)
-        end_r = min(16, row + half_rows + (1 if slice_rows % 2 != 0 else 0))
+        end_r = min(self.row_size, row + half_rows + (1 if slice_rows % 2 != 0 else 0))
         start_c = max(0, col - half_cols)
-        end_c = min(16, col + half_cols + (1 if slice_cols % 2 != 0 else 0))
+        end_c = min(self.col_size, col + half_cols + (1 if slice_cols % 2 != 0 else 0))
         
         # Adjust the indices for filling the input array
         input_row_start = max(0, half_rows - row)
@@ -480,8 +498,8 @@ class Minesweeper:
     
     def createInput2(self):
         input = self.current_board.copy()
-        for i in range(16):
-            for j in range(16):
+        for i in range(self.row_size):
+            for j in range(self.col_size):
                 if input[i][j] == -1:
                     if not self.has_shown_neighbour(i,j):
                         input[i][j] = -3
@@ -500,12 +518,12 @@ class Minesweeper:
                     if self.is_not_certain(row,col):
                         input = self.createInput2()
                         input[row][col]=-2
-                        instance = self.createInstance("./notABomb.mzn",16,16,input)
+                        instance = self.createInstance("./notABomb.mzn",self.row_size,self.col_size,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
                             self.lclicked(self.board[row][col]) 
                         else:
                             input[row][col]=-5
-                            instance = self.createInstance("./isABomb.mzn",16,16,input)
+                            instance = self.createInstance("./isABomb.mzn",self.row_size,self.col_size,input)
                             if instance.solve().status== Status.UNSATISFIABLE:
                                 self.rclicked(self.board[row][col])
                             else:
@@ -525,7 +543,7 @@ class Minesweeper:
                     if self.is_not_certain(row,col):
                         input = self.createInput2()
                         input[row][col]=-2
-                        instanceNM=self.createInstance("./notABomb.mzn",16,16,input)
+                        instanceNM=self.createInstance("./notABomb.mzn",self.row_size,self.col_size,input)
                         
                         if instanceNM.solve().status== Status.UNSATISFIABLE:
                             self.set_button_colour( 0, row, col)
@@ -533,13 +551,13 @@ class Minesweeper:
                             
                         else:
                             input[row][col]=-5
-                            instanceM = self.createInstance("./isABomb.mzn",16,16,input)
+                            instanceM = self.createInstance("./isABomb.mzn",self.row_size,self.col_size,input)
                             if instanceM.solve().status== Status.UNSATISFIABLE:
                                 self.set_button_colour( 100, row, col)
                                 self.prob[row][col] = 100
                             else:
                                 self.set_button_colour( -1, row, col)
-        self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
+        self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
 
     def set_button_colour(self, prob, row, col):
         button = self.board[row][col]
@@ -573,7 +591,7 @@ class Minesweeper:
 
     def can_be_x(self, input, r,c,center):
         input[r][c]= center
-        instance= self.createInstance("./canBeX.mzn",16,16,input)
+        instance= self.createInstance("./canBeX.mzn",self.row_size,self.col_size,input)
         result = instance.solve()
         return result.status
 
@@ -593,13 +611,13 @@ class Minesweeper:
                         # input = self.createInput(row,col)
                         input = self.createInput2()
                         input[row][col]=-5
-                        instance = self.createInstance("./isABomb.mzn",16,16,input)
+                        instance = self.createInstance("./isABomb.mzn",self.row_size,self.col_size,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
                             self.prob[row][col] = 100
                             self.set_button_colour( 100, row, col)
                         else:
                             input[row][col]= -2 
-                            instance = self.createInstance("./notABomb.mzn",16,16,input)
+                            instance = self.createInstance("./notABomb.mzn",self.row_size,self.col_size,input)
                             if instance.solve().status== Status.UNSATISFIABLE:
                                 self.prob[row][col] = 0
                                 self.set_button_colour( 0, row, col)
@@ -615,7 +633,7 @@ class Minesweeper:
                                 file_path = '../../test/output.csv'
                                 self.output_data(file_path, prob, row, col)
                                 
-        self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)             
+        self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)             
         print('done')
 
     def display_prob(self, prob, row, col):
@@ -693,7 +711,7 @@ class Minesweeper:
                         self.display_prob( prob, row, col)
         print("calculation complete")
 
-        self.open_button.grid(row = self.row_size+4,column = 0, columnspan = self.col_size, sticky=E)
+        self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
         print("done")
     
     def on_show_prob_smart_button_click(self):
@@ -746,11 +764,31 @@ class Minesweeper:
                     elif self.prob[row][col]==0:
                         self.lclicked(self.board[row][col]) 
         self.open_button.grid_remove()
+# def main():     
+#     global root
+#     root = Tk()
+#     root.title("Minesweeper")
+#     Minesweeper(root)
+#     root.mainloop()
+        
 def main():     
     global root
     root = Tk()
     root.title("Minesweeper")
-    Minesweeper(root)
+    
+    # Show difficulty selection dialog
+    dialog = DifficultyDialog(root)
+    if dialog.result == "Beginner":
+        row_size, col_size, mines_amount = 10, 10, 10
+    elif dialog.result == "Intermediate":
+        row_size, col_size, mines_amount = 16, 16, 40
+    elif dialog.result == "Expert":
+        row_size, col_size, mines_amount = 16, 30, 99
+    else:
+        root.destroy()
+        sys.exit("No difficulty selected. Exiting.")
+
+    Minesweeper(root, row_size, col_size, mines_amount)
     root.mainloop()
 
 

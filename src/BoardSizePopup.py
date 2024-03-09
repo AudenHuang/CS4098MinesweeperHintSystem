@@ -4,7 +4,7 @@ from tkinter import simpledialog
 class BoardSizePopup(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.grab_set()
+        
         self.var = tk.StringVar(value="entire")
         self.row_size = tk.StringVar(value="7")
         self.col_size = tk.StringVar(value="7")
@@ -29,6 +29,10 @@ class BoardSizePopup(tk.Toplevel):
         btn_frame.pack(fill='x', pady=5)
         tk.Button(btn_frame, text="OK", command=self.on_ok).pack(side='left')
         tk.Button(btn_frame, text="Cancel", command=self.destroy).pack(side='left')
+         # At the end of the method, close the popup window if it exists
+        if hasattr(self, 'popup') and self.popup:
+            self.popup.destroy()
+            self.popup = None  # Reset the popup variable
 
     def update_entries(self, *args):
         if self.var.get() == "partial":
