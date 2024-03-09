@@ -1,4 +1,4 @@
-
+%takes in 3 blocks to up, down, left, right to the targetting blocks
 int: Width;
 int: Height;
 
@@ -13,7 +13,7 @@ array[1..Width, 1..Height] of var -4..8: outputgrid;
 set of -2..8: valid_unrevealed = {-2} union 0..8;
 
 % Set the values for the decision variable
-constraint forall(i in 1..Width, j in 1..Height where grid[i, j] != -1 /\ grid[i, j] != -5) (
+constraint forall(i in 1..Width, j in 1..Height where grid[i, j] != -1/\ grid[i, j] != -5) (
   outputgrid[i, j] = grid[i,j]
 );
 
@@ -22,7 +22,7 @@ constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -1) (
   outputgrid[i, j] in valid_unrevealed
 );
 
-% Make sure that out of bound and target are set to not a bomb
+% Make sure that 100% are set to not a bomb
 constraint forall(i in 1..Width, j in 1..Height where grid[i, j] = -5) (
   outputgrid[i, j] in 0..8
 );
@@ -32,13 +32,14 @@ function var int: countMines(int: i, int: j) =
   sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
        then (outputgrid[i+di, j+dj] = -2) else 0 endif 
        | di in -1..1, dj in -1..1]);
+       
 
-
+      
 function var int: countN3(int: i, int: j) =
   sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
        then (outputgrid[i+di, j+dj] = -3) else 0 endif 
        | di in -1..1, dj in -1..1]);
-
+       
 constraint forall(i in 2..Width-1, j in 2..Height-1 where outputgrid[i,j]>=0)(
   countMines(i, j) <= outputgrid[i, j] /\ countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
@@ -54,18 +55,8 @@ constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) 
 constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Width=16/\Height=16) (
  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
-
-
 solve satisfy;
 
-%For debug
-% output[show(outputgrid[1,1..7]),"\n"];
-% output[show(outputgrid[2,1..7]),"\n"];
-% output[show(outputgrid[3,1..7]),"\n"];
-% output[show(outputgrid[4,1..7]),"\n"];
-% output[show(outputgrid[5,1..7]),"\n"];
-% output[show(outputgrid[6,1..7]),"\n"];
-% output[show(outputgrid[7,1..7]),"\n"];
 
 
 
