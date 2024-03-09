@@ -121,7 +121,7 @@ class Minesweeper:
         self.showprob_smart_test_button= Button(self.frame, text=" Test ")
         # self.showprob_smart_test_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-10, sticky=E)
         self.showprob_smart_test_button.grid(row=base_row + 1, column=max(self.col_size // 2, 1), columnspan=max(self.col_size // 2, 1), sticky=W+E)
-        self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_button_click())
+        self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_grid_click())
 
 
         self.open_button = Button(self.frame, text="All_Certain")
@@ -563,24 +563,52 @@ class Minesweeper:
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.check_certain2()
-        for row in range(self.row_size):
-            for col in range(self.col_size):
-                if self.unreveal_with_shown_neighbour(row,col):
-                    if self.is_not_certain(row,col):
-                        input = self.createInput2()
-                        input[row][col]=-2
-                        instanceNM=self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
-                        if instanceNM.solve().status== Status.UNSATISFIABLE:
-                            self.set_grid_colour( 0, row, col)
-                            self.prob[row][col] = 0
-                        else:
-                            input[row][col]=-5
-                            instanceM = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
-                            if instanceM.solve().status== Status.UNSATISFIABLE:
-                                self.set_grid_colour( 100, row, col)
-                                self.prob[row][col] = 100
-                            else:
-                                self.set_grid_colour( -1, row, col)
+        tasks = {}
+        with ProcessPoolExecutor() as executor:
+            for row in range(self.row_size):
+                for col in range(self.col_size):
+                    if self.unreveal_with_shown_neighbour(row,col):
+                        if self.is_not_certain(row,col):
+                            input_grid = self.createInput2()
+                            modified_input = input_grid.copy()
+                            # path = "./constraint.mzn" if type == "is_mine" else "./constraint.mzn"
+                            # future = executor.submit(MZSolver.solve_minizinc_instance, path, self.row_size, self.col_size, modified_input, False)
+                            # tasks[future] = (row, col, True, type)
+                            path = "./constraint.mzn"
+                            modified_input[row][col]= -2
+                            future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            tasks[future] = (row, col, 'is_mine', modified_input)
+
+                            # result = MZSolver.solve_minizinc_instance(path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            # if result == Status.UNSATISFIABLE:
+                            #     self.set_grid_colour(0, row, col)
+                            #     self.prob[row][col] = 0
+                            # else:
+                            #     modified_input[row][col]= -5
+                            #     result = MZSolver.solve_minizinc_instance(path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            #     if result== Status.UNSATISFIABLE:
+                            #         self.set_grid_colour(100, row, col)
+                            #         self.prob[row][col] = 100
+                            #     else:
+                            #         self.set_grid_colour( -1, row, col)
+            for future in as_completed(tasks):
+                row, col, type, grid_data = tasks[future]
+                status = future.result()
+                if type == 'is_mine':
+                    if status == Status.UNSATISFIABLE:
+                        self.set_grid_colour(0, row, col)
+                        self.prob[row][col] = 0
+                    else:
+                        grid_data[row][col] = -5
+                        future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                        tasks[future] = (row, col, 'not_mine', modified_input)
+                else:
+                    if status == Status.UNSATISFIABLE:
+                        self.set_grid_colour(100, row, col)
+                        self.prob[row][col] = 100
+                    else:
+                        self.set_grid_colour( -1, row, col)
+
         self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
         print("Done Certain")
 
@@ -616,7 +644,7 @@ class Minesweeper:
 
     def can_be_x(self, input, r,c,center):
         input[r][c]= center
-        instance= self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
+        instance= self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
         result = instance.solve()
         return result.status
 
@@ -637,13 +665,13 @@ class Minesweeper:
                         # input = self.createInput(row,col)
                         input = self.createInput2()
                         input[row][col]=-5
-                        instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
+                        instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
                             self.prob[row][col] = 100
                             self.set_grid_colour( 100, row, col)
                         else:
                             input[row][col]= -2 
-                            instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
+                            instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
                             if instance.solve().status== Status.UNSATISFIABLE:
                                 self.prob[row][col] = 0
                                 self.set_grid_colour( 0, row, col)
@@ -738,31 +766,22 @@ class Minesweeper:
                 for col in range(self.col_size):
                     if self.unreveal_with_shown_neighbour(row,col):
                         if self.is_not_certain(row,col):
-                            # self.prob[row][col] = -1
-                            # input = self.createInput2()
-                            # input[row][col]=-2
-                            # instanceNM = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input.copy())
-                            # input[row][col]=-5
-                            # instanceM = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
-                            # if(instanceNM.solve().status==Status.UNSATISFIABLE):
-                            #     self.prob[row][col] = 0
-                            #     self.set_grid_colour(0, row,col)
-                            # elif(instanceM.solve().status==Status.UNSATISFIABLE):
-                            #     self.prob[row][col] = 100
-                            #     self.set_grid_colour(100, row,col)
-                            # else:
                                 input_grid = []
-                                if (row_size== self.row_size and col_size == self.col_size):
+                                fullboard = (row_size== self.row_size and col_size == self.col_size)
+                                if (fullboard):
                                     input_grid = self.createInput2()
                                 else:
                                     input_grid = self.createInput(row,col,row_size,col_size)
                                 for type in ["is_mine", "not_mine"]:
-                                    rIndex = math.ceil(row_size/2) - 1 if row_size % 2 != 0 else row_size/2
-                                    cIndex = math.ceil(col_size/2) - 1 if col_size % 2 != 0 else col_size/2 
+                                    rIndex = row
+                                    cIndex = col
+                                    if (not fullboard):
+                                        rIndex = math.ceil(row_size/2) - 1 if row_size % 2 != 0 else row_size/2
+                                        cIndex = math.ceil(col_size/2) - 1 if col_size % 2 != 0 else col_size/2 
                                     modified_input = input_grid.copy()
                                     modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
                                     path = "./constraint.mzn" if type == "is_mine" else "./constraint.mzn"
-                                    future = executor.submit(MZSolver.solve_minizinc_instance, path, row_size, col_size, modified_input, True)
+                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
                                     tasks[future] = (row, col, False, type)
 
             print("Done Adding",len(tasks), "Tasks")
@@ -783,8 +802,13 @@ class Minesweeper:
                         print(prob)
                         filename = ''
                         if (not (row_size == 7 and col_size == 7)):
-                            filename = '_'+str(row_size) +'_by_'+str(col_size)
+                            if(row_size  ==self.row_size and col_size == self.col_size):
+                                filename = '_full_board'
+                            else:
+                                filename = '_'+str(row_size) +'_by_'+str(col_size)
+                        
                         file_path = '../../test/smart_output'+filename+'.csv'
+                        self.prob[row][col] = prob
                         self.output_data(file_path, prob, row, col)
                         #Update UI
                         self.display_prob( prob, row, col)

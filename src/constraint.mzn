@@ -1,6 +1,9 @@
 %takes in 3 blocks to up, down, left, right to the targetting blocks
+int: Max_Width;
+int: Max_Height;
 int: Width;
 int: Height;
+
 
 % data from python
 array[1..Width, 1..Height] of -5..8: grid;
@@ -52,7 +55,7 @@ constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) 
   countMines(i, j) <= outputgrid[i, j]
 );
 
-constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Width=16/\Height=16) (
+constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Width=Max_Width/\Height=Max_Height) (
  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
 solve satisfy;

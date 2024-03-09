@@ -1,6 +1,8 @@
- Height = 7;
+Height = 7;
+Width = 7;
+Height = 7;
 
- Width = 7;
+Width = 7;
  
  grid =  [| -3, -3, -3, -3, -3, -3, -3
           | -3, -3, -3, -3, -3, -3, -3

@@ -10,6 +10,6 @@ def copy_csv(input_file, output_file):
 
 if __name__ == "__main__":
     input_file = '../../test/data.csv'
-    output_file = '../../test/output.csv'
+    output_file = '../../test/smart_output.csv'
     copy_csv(input_file, output_file)
     print("Data copied successfully from 'data.csv' to 'smart_output.csv'")
