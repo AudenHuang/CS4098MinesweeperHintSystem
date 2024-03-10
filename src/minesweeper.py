@@ -98,7 +98,7 @@ class Minesweeper:
         self.solvecomp_button = Button(self.frame, text="Hint_Solve")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
         self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
+        self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve_current())
 
         self.show_certain_button = Button(self.frame, text="Hint_Certain")
         # self.show_certain_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size-5, sticky=E)
@@ -528,13 +528,22 @@ class Minesweeper:
                     if not self.has_shown_neighbour(i,j):
                         input[i][j] = -3
         return input
-  
+    def hint_solve_current(self):
+        self.hint_show_certain()
+        flag, open =self.open_mark_certain()
+        if (flag +open == 0):
+            print("no certain grids please check probability")
+        else:
+            print("flagged ", flag, "grids")
+            print("opened ", open, "grids")
+
     def hint_solve(self):
         """Function: solve parts of the game bases on current board's information by using Minizinc.
         """
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.check_certain()
+        self.open_mark_certain()
         for row in range(self.row_size):
             for col in range(self.col_size):
                 # for debug
@@ -846,14 +855,19 @@ class Minesweeper:
                 writer.writerow([prob, is_mine])        
 
     def open_mark_certain(self):
+        flag = 0
+        open = 0
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.current_board[row][col]== -1:
                     if self.prob[row][col]==100:
                         self.rclicked(self.board[row][col]) 
+                        flag+=1
                     elif self.prob[row][col]==0:
                         self.lclicked(self.board[row][col]) 
+                        open+=1
         self.open_button.grid_remove()
+        return flag, open
 # def main():     
 #     global root
 #     root = Tk()
