@@ -5,8 +5,8 @@ file_path = '../../test/smart_output.csv'
 data = pd.read_csv(file_path)
 data = data.sort_values(by='Probability')
 # Define the bins and labels for categorization
-bins = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-labels = ['0-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80-89', '90-99']
+bins = [0, 10, 20, 30, 40, 50, 50.001, 60, 70, 80, 90, 100]
+labels = ['0-9', '10-19', '20-29', '30-39', '40-49','50','51-59', '60-69', '70-79', '80-89', '90-99']
 
 # Categorize probabilities
 data['Range'] = pd.cut(data['Probability'], bins=bins, labels=labels, right=False)
