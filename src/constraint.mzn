@@ -34,28 +34,21 @@ function var int: countMines(int: i, int: j) =
        then (outputgrid[i+di, j+dj] = -2) else 0 endif 
        | di in -1..1, dj in -1..1]);
        
-
       
 function var int: countN3(int: i, int: j) =
   sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
        then (outputgrid[i+di, j+dj] = -3) else 0 endif 
        | di in -1..1, dj in -1..1]);
        
+
+
+constraint forall(i in 1..Width, j in 1..Height where outputgrid[i,j]>=0) (
+  countMines(i, j) <= outputgrid[i, j]
+);
+
 constraint forall(i in 2..Width-1, j in 2..Height-1 where outputgrid[i,j]>=0)(
-  countMines(i, j) <= outputgrid[i, j] /\ countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
+  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
-
-constraint forall(i in {1,Width}, j in 1..Height where outputgrid[i, j] >= 0) (
-  countMines(i, j) <= outputgrid[i, j]
-);
-
-constraint forall(i in 2..Width-1, j in {1,Height} where outputgrid[i, j] >= 0) (
-  countMines(i, j) <= outputgrid[i, j]
-);
-
-% constraint forall(i in 1..Width, j in 1..Height where outputgrid[i, j] >= 0/\Width=Max_Width/\Height=Max_Height) (
-%  countMines(i, j) <= outputgrid[i, j] /\ countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
-% );
 
 constraint forall(i in {1,Width}, j in 1..Height where outputgrid[i, j] >= 0/\Width=Max_Width/\Height=Max_Height) (
  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]

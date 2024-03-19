@@ -712,7 +712,7 @@ class Minesweeper:
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.is_border(row,col):
-                    currrent_grid = self.board[row][col]
+                    currrent_grid = self.current_board[row][col]
                     adjecent_grids = self.get_adjecent_grids(row,col,self.row_size,self.col_size,self.board)
                     unreveal_grids =[]
                     flag_count = 0
@@ -721,10 +721,10 @@ class Minesweeper:
                             flag_count +=1
                         elif not grid.is_show():
                             unreveal_grids.append(grid)
-                    if currrent_grid.value == (flag_count+len(unreveal_grids)):
+                    if currrent_grid == (flag_count+len(unreveal_grids)):
                         for grid in unreveal_grids:
                             self.rclicked(grid)
-                    elif currrent_grid.value == flag_count:
+                    elif currrent_grid == flag_count:
                         for grid in unreveal_grids:
                             self.lclicked(grid) 
 
