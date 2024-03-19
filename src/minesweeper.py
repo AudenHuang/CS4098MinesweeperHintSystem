@@ -446,7 +446,7 @@ class Minesweeper:
         
         inputprob[input_row_start:input_row_start + end_r - start_r, input_col_start:input_col_start + end_c - start_c] = self.prob[start_r:end_r, start_c:end_c].copy()
         input[input_row_start:input_row_start + end_r - start_r, input_col_start:input_col_start + end_c - start_c] = self.current_board[start_r:end_r, start_c:end_c].copy()
-        # Adjust 'isAMine' logic as needed
+
         for i in range(slice_rows):
             for j in range(slice_cols):
                 if input[i][j] == -1:
@@ -458,46 +458,6 @@ class Minesweeper:
                     else:
                         input[i][j] = -3
         return input
-    # def createInput(self,row,col,sizer, sizec):
-    #     '''Patameter: row's and colum's number of a grid, sizer for required row size and sizec for required column size
-    #     Function: create a  sizer by sizec input for the Minizinc model
-    #     Return: the created input'''
-    #     indexr = round(sizer/2)-1
-    #     indexc = round(sizec/2)-1
-    #     input = np.full((sizer, sizec), -4)
-    #     start_r = max(0, row - indexr)
-    #     end_r = min(16, row + indexr+1)
-    #     start_c = max(0, col - indexc)
-    #     end_c = min(16, col + indexc+1)
-    #     print(start_r,end_r,start_c, end_c)
-    #     input[start_r-row+(indexr):end_r-row+(indexr), start_c-col+(indexc):end_c-col+(indexc)] = self.current_board[start_r:end_r, start_c:end_c].copy()
-    #     # isAMine
-    #     for i in range(sizer):
-    #         for j in range(sizec):
-    #             if input[i][j] == -1:
-    #                 if not self.has_shown_neighbour_input(input,i,j):
-    #                     input[i][j] = -3
-    #     print(input)
-    #     return input
-    # def createInput(self,row,col,sizer, sizec):
-    #     '''Patameter: row's and colum's number of a grid, sizer for required row size and sizec for required column size
-    #     Function: create a  sizer by sizec input for the Minizinc model
-    #     Return: the created input'''
-    #     indexr = round(sizer/2)-1
-    #     indexc = round(sizec/2)-1
-    #     input = np.full((sizer, sizec), -4)
-    #     start_r = max(0, row - indexr)
-    #     end_r = min(16, row + indexr+1)
-    #     start_c = max(0, col - indexc)
-    #     end_c = min(16, col + indexc+1)
-    #     input[start_r-row+(indexr):end_r-row+(indexr), start_c-col+(indexc):end_c-col+(indexc)] = self.current_board[start_r:end_r, start_c:end_c].copy()
-    #     # isAMine
-    #     for i in range(sizer):
-    #         for j in range(sizec):
-    #             if input[i][j] == -1:
-    #                 if not self.has_shown_neighbour_input(input,i,j):
-    #                     input[i][j] = -3
-    #     return input
 
     def is_not_certain(self, row, col):
         if self.prob[row][col] == 100:
@@ -506,19 +466,21 @@ class Minesweeper:
             return False
         return True
     
-    def createInstance(self,path,w,h,value):
-        # Load MiniZinc models
-        model = Model(path)
-        # Create a MiniZinc solver instance (e.g., Gecode)
-        gecode = Solver.lookup("gecode")
-        # Create a MiniZinc instance for the model
-        instance = Instance(gecode, model)
-        # Feed the input to the model
-        instance["grid"] = value
-        instance["Width"] = w
-        instance["Height"] = h
-        # Return the model instance
-        return instance
+    # def createInstance(self,path,w,h,value):
+    #     # Load MiniZinc models
+    #     model = Model(path)
+    #     # Create a MiniZinc solver instance (e.g., Gecode)
+    #     gecode = Solver.lookup("gecode")
+    #     # Create a MiniZinc instance for the model
+    #     instance = Instance(gecode, model)
+    #     # Feed the input to the model
+    #     instance["Max_Width"] = max_width
+    #     instance["Max_Height"] = max_height
+    #     instance["grid"] = value
+    #     instance["Width"] = w
+    #     instance["Height"] = h
+    #     # Return the model instance
+    #     return instance
     
     def createInput2(self):
         input = self.current_board.copy()
@@ -641,50 +603,32 @@ class Minesweeper:
             grid.show_prob(0) 
 
 
-    def can_be_x(self, input, r,c,center):
-        input[r][c]= center
-        instance= self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
-        result = instance.solve()
-        return result.status
+    def can_be_x(self, r,c, input,value):
+        modified_input = input
+        modified_input[r][c]= value
+        return MZSolver.solve_minizinc_instance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
 
         
     def hint_prob(self):
         self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.showprob_button.config(text="Update_Prob")
-        self.check_certain2()
+        self.hint_show_certain()
+        # with ProcessPoolExecutor() as executor:
         for row in range(self.row_size):
             for col in range(self.col_size):
-                # for debug
-                # print(self.has_shown_neighbour(row,col))
-
-               if self.unreveal_with_shown_neighbour(row,col):
+                if self.unreveal_with_shown_neighbour(row,col):
                     if self.is_not_certain(row,col):
-                        self.prob[row][col] = -1
-                        
-                        # input = self.createInput(row,col)
                         input = self.createInput2()
-                        input[row][col]=-5
-                        instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
-                        if instance.solve().status== Status.UNSATISFIABLE:
-                            self.prob[row][col] = 100
-                            self.set_grid_colour( 100, row, col)
-                        else:
-                            input[row][col]= -2 
-                            instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,input)
-                            if instance.solve().status== Status.UNSATISFIABLE:
-                                self.prob[row][col] = 0
-                                self.set_grid_colour( 0, row, col)
-                            else:
-                                denominator = 1.0
-                                for i in range(1,9):
-                                    if self.can_be_x(input,row,col,i)==Status.SATISFIED:
-                                        denominator = denominator+1.0
-                                prob = (1.0/denominator)*100
-                                self.prob[row][col] = prob
-                                prob = round(prob, 2)
-                                self.display_prob(prob, row, col)
-                                file_path = '../../test/output.csv'
-                                self.output_data(file_path, prob, row, col)
+                        denominator = 1.0
+                        for i in range(1,9):
+                            if self.can_be_x(row,col,input,i)==Status.SATISFIED:
+                               denominator = denominator+1.0
+                        prob = (1.0/denominator)*100
+                        self.prob[row][col] = prob
+                        prob = round(prob, 2)
+                        self.display_prob(prob, row, col)
+                        file_path = '../../test/output.csv'
+                        self.output_data(file_path, prob, row, col)
                                 
         self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)             
         print('done')
