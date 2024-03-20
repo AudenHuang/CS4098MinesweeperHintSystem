@@ -514,12 +514,12 @@ class Minesweeper:
                     if self.is_not_certain(row,col):
                         input = self.createInput2()
                         input[row][col]=-2
-                        instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
+                        # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
                             self.lclicked(self.board[row][col]) 
                         else:
                             input[row][col]=-5
-                            instance = self.createInstance("./constraint.mzn",self.row_size,self.col_size,input)
+                            # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
                             if instance.solve().status== Status.UNSATISFIABLE:
                                 self.rclicked(self.board[row][col])
                             else:
@@ -543,12 +543,13 @@ class Minesweeper:
                         if self.is_not_certain(row,col):
                             input_grid = self.createInput2()
                             modified_input = input_grid.copy()
-                            # path = "./constraint.mzn" if type == "is_mine" else "./constraint.mzn"
+                            # path = "./model/constraint.mzn" if type == "is_mine" else "./model/constraint.mzn"
                             # future = executor.submit(MZSolver.solve_minizinc_instance, path, self.row_size, self.col_size, modified_input, False)
                             # tasks[future] = (row, col, True, type)
-                            path = "./constraint.mzn"
+                            path = "./model/constraint.mzn"
                             modified_input[row][col]= -2
                             future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            # future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, self.mines_amount, modified_input, False)
                             # tasks[future] = (row, col, 'is_mine', modified_input)
                             is_mine_tasks[future] = (row, col, modified_input)
             for future in as_completed(is_mine_tasks):
@@ -606,7 +607,8 @@ class Minesweeper:
     def can_be_x(self, r,c, input,value):
         modified_input = input
         modified_input[r][c]= value
-        return MZSolver.solve_minizinc_instance("./constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
+        # return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,self.mines_amount,modified_input)
+        return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
 
         
     def hint_prob(self):
@@ -619,8 +621,8 @@ class Minesweeper:
                 if self.unreveal_with_shown_neighbour(row,col):
                     if self.is_not_certain(row,col):
                         input = self.createInput2()
-                        denominator = 1.0
-                        for i in range(1,9):
+                        denominator = 0.0
+                        for i in range(0,9):
                             if self.can_be_x(row,col,input,i)==Status.SATISFIED:
                                denominator = denominator+1.0
                         prob = (1.0/denominator)*100
@@ -721,8 +723,8 @@ class Minesweeper:
                                     modified_input = input_grid.copy()
                                     rIndex, cIndex = self.adjust_indices(row, col, row_size, col_size, fullboard)
                                     modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
-                                    path = "./constraint.mzn"
-                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
+                                    path = "./model/constraint.mzn"
+                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size,self.mines_amount, modified_input, True)
                                     tasks[future] = (row, col,type)
 
             print("Done Adding",len(tasks), "Tasks")

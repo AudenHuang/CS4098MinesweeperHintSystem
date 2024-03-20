@@ -5,7 +5,7 @@ class MZSolver:
     def solve_minizinc_instance(model_path, max_height,max_width,height, width, grid_data,all_solutions=False):
         # Ignore MiniZinc model inconsistency detected warnings
         warnings.filterwarnings("ignore", message=".*model inconsistency detected.*")
-
+        warnings.filterwarnings("ignore")
         # Load MiniZinc model and solver
         model = Model(model_path)
         gecode = Solver.lookup("gecode")
@@ -14,6 +14,7 @@ class MZSolver:
         instance["Max_Width"] = max_width
         instance["Height"] = height
         instance["Width"] = width
+        # instance["MineNum"] = mineNum
         instance["grid"] = grid_data
         if all_solutions:
             result = instance.solve()
