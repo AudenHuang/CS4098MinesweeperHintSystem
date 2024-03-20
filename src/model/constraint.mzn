@@ -2,6 +2,7 @@ int: Max_Width;
 int: Max_Height;
 int: Width;
 int: Height;
+% int: MineNum;
 
 % data from python
 array[1..Height,1..Width] of -5..8: grid;
@@ -16,13 +17,13 @@ set of -2..8: valid_unrevealed = {-2} union 0..8;
 
 % Count Mines
 function var int: countMines(int: i, int: j) =
-  sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
+  sum([if i+di >= 1 /\ i+di <= Height /\ j+dj >= 1 /\ j+dj <= Width
        then (outputgrid[i+di, j+dj] = -2) else 0 endif 
        | di in -1..1, dj in -1..1]);
        
       
 function var int: countN3(int: i, int: j) =
-  sum([if i+di >= 1 /\ i+di <= Width /\ j+dj >= 1 /\ j+dj <= Height 
+  sum([if i+di >= 1 /\ i+di <= Height  /\ j+dj >= 1 /\ j+dj <= Width
        then (outputgrid[i+di, j+dj] = -3) else 0 endif 
        | di in -1..1, dj in -1..1]);
        
@@ -56,6 +57,10 @@ constraint forall(i in 1..Height, j in {1,Width} where outputgrid[i, j] >= 0/\Wi
 constraint forall(i in {1,Height}, j in 2..Width-1 where outputgrid[i, j] >= 0/\Width=Max_Width/\Height=Max_Height) (
  countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
 );
+
+% constraint (Width = Max_Width /\ Height = Max_Height) -> 
+%   sum([if outputgrid[i, j] = -2 then 1 else 0 endif | i in 1..Height, j in 1..Width]) = MineNum;
+
 solve satisfy;
 
 
