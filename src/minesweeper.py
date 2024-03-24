@@ -9,7 +9,7 @@ from MZSolver import *
 from BoardSizePopup import *
 import random
 # import minizinc
-from minizinc import Instance, Model, Solver, Status
+from minizinc import Status
 import numpy as np
 import csv
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -62,6 +62,7 @@ class Minesweeper:
         self.img_sun_move = PhotoImage(file = "images/img_sun_move.gif")
         self.img_sun_win = PhotoImage(file = "images/img_sun_win.gif")
         self.img_sun_lose = PhotoImage(file = "images/img_sun_lose.gif")
+        
         # Initialize images for game grids.
         self.images = {}
         self.images['blank'] = PhotoImage(file = "images/img_blank.gif")
@@ -188,7 +189,7 @@ class Minesweeper:
         for row in range(self.row_size):
             lis = []
             for col in range(self.col_size):
-                grid = FieldButton(row, col, self.frame, self.images)
+                grid = FieldButton(col, row, self.frame, self.images)
                 # first row grid for new game button
                 grid.grid(row=row+1, column=col)
                 lis.append(grid)
@@ -205,7 +206,7 @@ class Minesweeper:
         mines = self.mines_amount
         while mines:
             # Mute if you want to enable the first xlick to be a mine
-            grids = self.get_adjecent_grids(self.first_click_grid.x, self.first_click_grid.y, self.row_size,self.col_size,self.board)
+            grids = self.get_adjecent_grids(self.first_click_grid.y, self.first_click_grid.x, self.row_size,self.col_size,self.board)
             grids.append(self.first_click_grid)
             #--------------------------------------------------------
             
@@ -219,7 +220,7 @@ class Minesweeper:
                 match = False 
                 # Mute if you want to enable the first click to be a mine
                 for b in grids:
-                    if (row == b.x) and (col == b.y):
+                    if (row == b.y) and (col == b.x):
                         match = True
                         break
                 #--------------------------------------------------------
@@ -298,7 +299,7 @@ class Minesweeper:
             grids = [grid]
             while grids:
                 temp_grid = grids.pop()
-                surrounding = self.get_adjecent_grids(temp_grid.x, temp_grid.y, self.row_size, self.col_size, self.board)
+                surrounding = self.get_adjecent_grids(temp_grid.y, temp_grid.x, self.row_size, self.col_size, self.board)
                 for neighbour in surrounding:
                     if not neighbour.is_show() and neighbour.value == 0:
                         grids.append(neighbour)
@@ -326,11 +327,11 @@ class Minesweeper:
         if grid.is_flag():
             grid.flag()
             self.flags -= 1
-            self.current_board[grid.x][grid.y] = -1
+            self.current_board[grid.y][grid.x] = -1
         else:
             grid.flag()
             self.flags += 1
-            self.current_board[grid.x][grid.y] = -2
+            self.current_board[grid.y][grid.x] = -2
 
         # Update remaining mines label.
         self.remaining_mines = (self.mines_amount-self.flags) if self.flags<self.mines_amount else 0
@@ -384,9 +385,9 @@ class Minesweeper:
         if (self.first_click):
             lowest_prob_grids = grids[0]
             for grid in grids:
-                if self.prob[lowest_prob_grids.x][lowest_prob_grids.y] == -1:
+                if self.prob[lowest_prob_grids.y][lowest_prob_grids.x] == -1:
                     lowest_prob_grids = grid
-                elif self.prob[grid.x][grid.y]<self.prob[lowest_prob_grids.x][lowest_prob_grids.y]:
+                elif self.prob[grid.y][grid.x]<self.prob[lowest_prob_grids.y][lowest_prob_grids.x]:
                     lowest_prob_grids = grid
                 return lowest_prob_grids
 
@@ -409,7 +410,7 @@ class Minesweeper:
     def has_unshown_neighbour(self, row ,col):
         adjecent_grids = self.get_adjecent_grids(row,col,self.row_size,self.col_size,self.board)
         for grid in adjecent_grids:
-            if self.current_board[grid.x][grid.y]== -1:
+            if self.current_board[grid.y][grid.x]== -1:
                 return True
         return False
     
@@ -424,7 +425,7 @@ class Minesweeper:
                 return True
         return False
     
-    def createInput(self, row, col, slice_rows=7, slice_cols=7):
+    def createInput_partial_board(self, row, col, slice_rows=7, slice_cols=7):
         # Ensure the slice size does not exceed the board dimensions
         slice_rows = min(slice_rows, self.row_size)
         slice_cols = min(slice_cols, self.col_size)
@@ -482,7 +483,7 @@ class Minesweeper:
     #     # Return the model instance
     #     return instance
     
-    def createInput2(self):
+    def createInput_full_board(self):
         input = self.current_board.copy()
         for i in range(self.row_size):
             for j in range(self.col_size):
@@ -504,7 +505,7 @@ class Minesweeper:
         """
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
-        self.check_certain()
+        self.check_certain_solve()
         self.open_mark_certain()
         for row in range(self.row_size):
             for col in range(self.col_size):
@@ -512,7 +513,7 @@ class Minesweeper:
                 # print(self.has_shown_neighbour(row,col))
                 if self.unreveal_with_shown_neighbour(row,col):
                     if self.is_not_certain(row,col):
-                        input = self.createInput2()
+                        input = self.createInput_full_board()
                         input[row][col]=-2
                         # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
                         if instance.solve().status== Status.UNSATISFIABLE:
@@ -533,31 +534,26 @@ class Minesweeper:
     def hint_show_certain(self):
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
-        self.check_certain2()
+        self.check_certain_prob()
         is_mine_tasks = {}
         not_mine_tasks = {}
+        input_grid = self.createInput_full_board()
         with ProcessPoolExecutor() as executor:
             for row in range(self.row_size):
                 for col in range(self.col_size):
-                    if self.unreveal_with_shown_neighbour(row,col):
+                    if (input_grid[row][col]== -1):
                         if self.is_not_certain(row,col):
-                            input_grid = self.createInput2()
                             modified_input = input_grid.copy()
-                            # path = "./model/constraint.mzn" if type == "is_mine" else "./model/constraint.mzn"
-                            # future = executor.submit(MZSolver.solve_minizinc_instance, path, self.row_size, self.col_size, modified_input, False)
-                            # tasks[future] = (row, col, True, type)
                             path = "./model/constraint.mzn"
                             modified_input[row][col]= -2
                             future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
-                            # future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, self.mines_amount, modified_input, False)
-                            # tasks[future] = (row, col, 'is_mine', modified_input)
                             is_mine_tasks[future] = (row, col, modified_input)
             for future in as_completed(is_mine_tasks):
                 row, col, grid_data = is_mine_tasks[future]
                 status = future.result()
                 if status == Status.UNSATISFIABLE:
-                    self.set_grid_colour(0, row, col)
                     self.prob[row][col] = 0
+                    self.set_grid_colour(0, row, col)
                 else:
                     grid_data[row][col] = -5
                     future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, grid_data, False)
@@ -566,10 +562,11 @@ class Minesweeper:
                 row, col = not_mine_tasks[future]
                 status = future.result()             
                 if status == Status.UNSATISFIABLE:
-                    self.set_grid_colour(100, row, col)
                     self.prob[row][col] = 100
+                    self.set_grid_colour(100, row, col)
                 else:
-                    self.set_grid_colour( -1, row, col)
+                    self.prob[row][col] = -1
+                    self.set_grid_colour(-1, row, col)
 
         self.open_button.grid(row = self.row_size+6,column = 0, columnspan = self.col_size, sticky=E)
         print("Done Certain")
@@ -605,23 +602,25 @@ class Minesweeper:
 
 
     def can_be_x(self, r,c, input,value):
-        modified_input = input
+        modified_input = input.copy()
         modified_input[r][c]= value
         # return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,self.mines_amount,modified_input)
         return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
 
         
     def hint_prob(self):
+        self.output_text.delete('1.0', END)
         self.showprob_smart_button.config(text="Show_Prob_Smart")
         self.showprob_button.config(text="Update_Prob")
         self.hint_show_certain()
-        # with ProcessPoolExecutor() as executor:
+        input = self.createInput_full_board()
+        # for testing
+        # print(input)
         for row in range(self.row_size):
             for col in range(self.col_size):
-                if self.unreveal_with_shown_neighbour(row,col):
+                if (input[row][col]== -1):
                     if self.is_not_certain(row,col):
-                        input = self.createInput2()
-                        denominator = 0.0
+                        denominator = 1
                         for i in range(0,9):
                             if self.can_be_x(row,col,input,i)==Status.SATISFIED:
                                denominator = denominator+1.0
@@ -654,7 +653,7 @@ class Minesweeper:
                 return True
         return False
 
-    def check_certain(self):
+    def check_certain_solve(self):
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.is_border(row,col):
@@ -674,7 +673,7 @@ class Minesweeper:
                         for grid in unreveal_grids:
                             self.lclicked(grid) 
 
-    def check_certain2(self):
+    def check_certain_prob(self):
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.is_border(row,col):
@@ -689,14 +688,15 @@ class Minesweeper:
                             unreveal_grids.append(grid)
                     if currrent_grid.value == (flag_count+len(unreveal_grids)):
                         for grid in unreveal_grids:
-                            if(not self.prob[grid.x][grid.y] == 100):
-                                self.prob[grid.x][grid.y] = 100
-                                self.set_grid_colour(100, grid.x,grid.y)
+                            if(not self.prob[grid.y][grid.x] == 100):
+                                self.prob[grid.y][grid.x] = 100
+                                self.set_grid_colour(100, grid.y,grid.x)
                     elif currrent_grid.value == flag_count:
                         for grid in unreveal_grids:
-                            if(not self.prob[grid.x][grid.y] == 0):
-                                self.prob[grid.x][grid.y] = 0
-                                self.set_grid_colour(0, grid.x,grid.y)                
+                            if(not self.prob[grid.y][grid.x] == 0):
+                                self.prob[grid.y][grid.x] = 0
+                                self.set_grid_colour(0, grid.y,grid.x)  
+                                              
     def adjust_indices(self, row, col, row_size, col_size, fullboard):
         if not fullboard:
             rIndex = math.ceil(row_size / 2) - 1 if row_size % 2 != 0 else row_size / 2
@@ -705,6 +705,7 @@ class Minesweeper:
         return row, col
 
     def hint_prob_smart(self, row_size, col_size):
+        self.output_text.delete('1.0', END)
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Update_Prob_Smart")
         # Initialize an empty dictionary to store results
@@ -718,13 +719,13 @@ class Minesweeper:
                         if self.is_not_certain(row,col):
                                 input_grid = []
                                 fullboard = (row_size== self.row_size and col_size == self.col_size)
-                                input_grid = self.createInput2() if fullboard else self.createInput(row, col, row_size, col_size)
+                                input_grid = self.createInput_full_board() if fullboard else self.createInput_partial_board(row, col, row_size, col_size)
                                 for type in ["is_mine", "not_mine"]:
                                     modified_input = input_grid.copy()
                                     rIndex, cIndex = self.adjust_indices(row, col, row_size, col_size, fullboard)
                                     modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
                                     path = "./model/constraint.mzn"
-                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size,self.mines_amount, modified_input, True)
+                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
                                     tasks[future] = (row, col,type)
 
             print("Done Adding",len(tasks), "Tasks")
@@ -749,7 +750,7 @@ class Minesweeper:
                         else:
                             filename = '_'+str(row_size) +'_by_'+str(col_size)
                     
-                    file_path = '../../test/smart_output'+filename+'.csv'
+                    file_path = '../../test/smart_output'+filename+'_compare2.csv'
                     self.prob[row][col] = prob
                     self.output_data(file_path, prob, row, col)
                     #Update UI
@@ -819,8 +820,7 @@ class Minesweeper:
 #     root = Tk()
 #     root.title("Minesweeper")
 #     Minesweeper(root)
-#     root.mainloop()
-        
+#     root.mainloop() 
 def main():     
     global root
     root = Tk()

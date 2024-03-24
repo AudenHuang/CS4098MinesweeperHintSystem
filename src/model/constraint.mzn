@@ -59,7 +59,7 @@ constraint forall(i in {1,Height}, j in 2..Width-1 where outputgrid[i, j] >= 0/\
 );
 
 % constraint (Width = Max_Width /\ Height = Max_Height) -> 
-%   sum([if outputgrid[i, j] = -2 then 1 else 0 endif | i in 1..Height, j in 1..Width]) = MineNum;
+%   sum([if outputgrid[i, j] = -2 then 1 else 0 endif | i in 1..Height, j in 1..Width]) <= MineNum;
 
 solve satisfy;
 

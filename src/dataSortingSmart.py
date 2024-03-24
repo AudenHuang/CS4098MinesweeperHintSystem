@@ -1,30 +1,22 @@
 import pandas as pd
 
 # Load the CSV data
-file_path = '../../test/output.csv'
+file_path = '../../test/smart_output.csv'
 data = pd.read_csv(file_path)
 data = data.sort_values(by='Probability')
+# Define the bins and labels for categorization
+bins = [0, 10, 20, 30, 40, 50, 50.001, 60, 70, 80, 90, 100]
+labels = ['0.01-9.99', '10.00-19.99', '20.00-29.99', '30.00-39.99', '40.00-49.99','50.00','50.01-59.99', '60.00-69.99', '70.00-79.99', '80.00-89.99', '90.00-99.99']
 
-# Specific values you're interested in
-values = [11.11, 12.50, 14.29, 16.67, 20.00, 25.00, 33.33, 50.00]
-# Convert to string for labeling purposes
-labels = [str(value) for value in values]
-
-# Function to categorize each probability
-def categorize_probability(prob, values):
-    # Find the closest value
-    closest_value = min(values, key=lambda x:abs(x-prob))
-    return str(closest_value)
-
-# Categorize probabilities based on specific values
-data['Range'] = data['Probability'].apply(lambda x: categorize_probability(x, values))
+# Categorize probabilities
+data['Range'] = pd.cut(data['Probability'], bins=bins, labels=labels, right=False)
 
 # Initialize the summary DataFrame
 summary = pd.DataFrame(columns=['Predicted Probability', 'Mine', 'Not Mine', 'Actual Probability'])
 
-for value in labels:
-    # Subset data for the current value
-    range_data = data[data['Range'] == value]
+for label in labels:
+    # Subset data for the current range
+    range_data = data[data['Range'] == label]
     
     # Count mines and not mines
     mine_count = range_data['IsAMine'].sum()
@@ -36,7 +28,7 @@ for value in labels:
 
     # Append to summary DataFrame
     summary = summary.append({
-        'Predicted Probability': value,
+        'Predicted Probability': label,
         'Mine': mine_count,
         'Not Mine': not_mine_count,
         'Actual Probability': actual_prob
