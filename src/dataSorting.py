@@ -28,17 +28,17 @@ for value in labels:
     
     # Count mines and not mines
     mine_count = range_data['IsAMine'].sum()
-    not_mine_count = len(range_data) - mine_count
+    total_count = len(range_data)
     
     # Calculate actual probability
-    actual_prob = mine_count / (mine_count + not_mine_count) if (mine_count + not_mine_count) > 0 else 0
+    actual_prob = mine_count /  total_count if  total_count > 0 else 0
     actual_prob = round(actual_prob * 100, 2)
 
     # Append to summary DataFrame
     summary = summary.append({
         'Predicted Probability': value,
         'Mine': mine_count,
-        'Not Mine': not_mine_count,
+        'Total': total_count,
         'Actual Probability': actual_prob
     }, ignore_index=True)
 

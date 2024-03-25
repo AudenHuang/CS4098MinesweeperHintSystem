@@ -96,11 +96,10 @@ class Minesweeper:
 
         # Initialize Hint  button.
         base_row = self.row_size + 3  # Starting row for buttons below the game board
-        self.solvecomp_button = Button(self.frame, text="Hint_Solve")
+        self.solvecomp_button = Button(self.frame, text="Hint_Solve_Iterative")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
         self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve_current())
-
+        self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
         self.show_certain_button = Button(self.frame, text="Hint_Certain")
         # self.show_certain_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size-5, sticky=E)
         self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
@@ -229,7 +228,13 @@ class Minesweeper:
                 self.mines.append(self.board[row][col])
                 self.update_surrounding_grids(row, col, 1)
                 mines -= 1
-            
+            # self.board[0][0].value = 0
+            # self.board[0][1].value = 1
+            # self.board[1][0].value = 0
+            # self.board[1][1].value = 1
+            # self.board[2][0].value = 1
+            # self.board[2][1].value = 2
+            # self.board[2][2].value = 2
         
 
     def get_adjecent_grids(self, row, col, r_size, c_size,input):
@@ -499,37 +504,43 @@ class Minesweeper:
         else:
             print("flagged ", flag, "grids")
             print("opened ", open, "grids")
+        return flag, open
 
     def hint_solve(self):
         """Function: solve parts of the game bases on current board's information by using Minizinc.
         """
-        self.showprob_button.config(text="Show_Prob")
-        self.showprob_smart_button.config(text="Show_Prob_Smart")
-        self.check_certain_solve()
-        self.open_mark_certain()
-        for row in range(self.row_size):
-            for col in range(self.col_size):
-                # for debug
-                # print(self.has_shown_neighbour(row,col))
-                if self.unreveal_with_shown_neighbour(row,col):
-                    if self.is_not_certain(row,col):
-                        input = self.createInput_full_board()
-                        input[row][col]=-2
-                        # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
-                        if instance.solve().status== Status.UNSATISFIABLE:
-                            self.lclicked(self.board[row][col]) 
-                        else:
-                            input[row][col]=-5
-                            # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
-                            if instance.solve().status== Status.UNSATISFIABLE:
-                                self.rclicked(self.board[row][col])
-                            else:
-                                self.set_grid_colour( -1, row, col)
-                    else:
-                        if self.prob[row][col] == 0:
-                            self.lclicked(self.board[row][col]) 
-                        else:
-                            self.rclicked(self.board[row][col]) 
+        # self.showprob_button.config(text="Show_Prob")
+        # self.showprob_smart_button.config(text="Show_Prob_Smart")
+        # self.check_certain_solve()
+        # self.open_mark_certain()
+        # for row in range(self.row_size):
+        #     for col in range(self.col_size):
+        #         # for debug
+        #         # print(self.has_shown_neighbour(row,col))
+        #         if self.unreveal_with_shown_neighbour(row,col):
+        #             if self.is_not_certain(row,col):
+        #                 input = self.createInput_full_board()
+        #                 input[row][col]=-2
+        #                 # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
+        #                 if instance.solve().status== Status.UNSATISFIABLE:
+        #                     self.lclicked(self.board[row][col]) 
+        #                 else:
+        #                     input[row][col]=-5
+        #                     # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
+        #                     if instance.solve().status== Status.UNSATISFIABLE:
+        #                         self.rclicked(self.board[row][col])
+        #                     else:
+        #                         self.set_grid_colour( -1, row, col)
+        #             else:
+        #                 if self.prob[row][col] == 0:
+        #                     self.lclicked(self.board[row][col]) 
+        #                 else:
+        #                     self.rclicked(self.board[row][col]) 
+        flag,open = self.hint_solve_current()
+        if(flag+open!=0):
+            self.hint_solve()
+        else:
+            print("iterative solve done")
             
     def hint_show_certain(self):
         self.showprob_button.config(text="Show_Prob")
@@ -637,7 +648,7 @@ class Minesweeper:
     def display_prob(self, prob, row, col):
         self.set_grid_colour(prob, row,col)
         # messagebox.showinfo("Probability", f"Probability of grid ({row+1}, {col+1}) being a mine: {self.prob[row][col]}%")
-        message = f"Probability of grid ({row+1}, {col+1}) being a mine: {prob}%\n"
+        message = f"Probability of grid ({row}, {col}) being a mine: {prob}%\n"
         self.output_text.insert(END, message)
         # Auto-scroll to the bottom
         self.output_text.see(END)
