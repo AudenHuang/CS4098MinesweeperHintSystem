@@ -2,7 +2,7 @@ import warnings
 from minizinc import Instance, Model, Solver, Status
 class MZSolver:
     @staticmethod
-    def solve_minizinc_instance(model_path, max_height,max_width,height, width, grid_data,all_solutions=False):
+    def solve_minizinc_instance( max_height,max_width,height, width, grid_data,all_solutions=False, model_path="./model/constraint.mzn"):
         # Ignore MiniZinc model inconsistency detected warnings
         warnings.filterwarnings("ignore", message=".*model inconsistency detected.*")
         # Load MiniZinc model and solver

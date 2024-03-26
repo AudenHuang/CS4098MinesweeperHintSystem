@@ -97,37 +97,37 @@ class Minesweeper:
         self.control_frame = Frame(self.frame)
         self.control_frame.grid(row=self.row_size+7, column=self.col_size+2, padx=10, pady=10)
         # Initialize Hint  button.
-        base_row = 0 # Starting row for buttons below the game board
+
         self.solvecomp_button = Button(self.control_frame , text="Hint_Solve_Iterative")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
-        self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.solvecomp_button.grid(row=0, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
 
         self.solvecurrent_button = Button(self.control_frame , text="Hint_Solve_Current")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
-        self.solvecurrent_button.grid(row=base_row+1, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.solvecurrent_button.grid(row=1, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.solvecurrent_button.bind("<Button-1>", lambda Button: self.hint_solve_current())
 
         self.show_certain_button = Button(self.control_frame , text="Hint_Certain")
         # self.show_certain_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.show_certain_button.grid(row=base_row+2, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.show_certain_button.grid(row=2, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.show_certain_button.bind("<Button-1>", lambda Button: self.hint_show_certain())
 
         self.showprob_button = Button(self.control_frame , text=" Show_Prob ")
         # self.showprob_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size, sticky=E)
-        self.showprob_button.grid(row=base_row+3, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_button.grid(row=3, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_button.bind("<Button-1>", lambda Button: self.hint_prob())
 
         self.showprob_smart_button= Button(self.control_frame , text=" Show_Prob_Smart ")
         # self.showprob_smart_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.showprob_smart_button.grid(row=base_row + 4, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_smart_button.grid(row=4, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_smart_button.bind("<Button-1>", lambda Button: self.hint_prob_smart(7,7))
 
 
 
         self.showprob_smart_test_button= Button(self.control_frame , text=" Test ")
         # self.showprob_smart_test_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-10, sticky=E)
-        self.showprob_smart_test_button.grid(row=base_row + 5, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_smart_test_button.grid(row=5, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_grid_click())
 
 
@@ -518,8 +518,8 @@ class Minesweeper:
         """
         self.output_text.delete('1.0', END)
         self.open_button.grid_remove()
-        # self.showprob_button.config(text="Show_Prob")
-        # self.showprob_smart_button.config(text="Show_Prob_Smart")
+        self.showprob_button.config(text="Show_Prob")
+        self.showprob_smart_button.config(text="Show_Prob_Smart")
         # self.check_certain_solve()
         # self.open_mark_certain()
         # for row in range(self.row_size):
@@ -566,9 +566,8 @@ class Minesweeper:
                     if (input_grid[row][col]== -1):
                         if self.is_not_certain(row,col):
                             modified_input = input_grid.copy()
-                            path = "./model/constraint.mzn"
                             modified_input[row][col]= -2
-                            future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
                             is_mine_tasks[future] = (row, col, modified_input)
             for future in as_completed(is_mine_tasks):
                 row, col, grid_data = is_mine_tasks[future]
@@ -579,7 +578,7 @@ class Minesweeper:
                     self.set_grid_colour(0, row, col)
                 else:
                     grid_data[row][col] = -5
-                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, self.row_size, self.col_size, grid_data, False)
+                    future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, grid_data, False)
                     not_mine_tasks[future] = (row, col)
             for future in as_completed(not_mine_tasks):
                 row, col = not_mine_tasks[future]
@@ -592,7 +591,7 @@ class Minesweeper:
                     self.prob[row][col] = -1
                     self.set_grid_colour(-1, row, col)
         if(safe+mine!=0):
-            self.open_button.grid(row = self.row_size+6,column = 0, columnspan = max(self.col_size // 3, 1), sticky=E)
+            self.open_button.grid(row = 6,column = 0, columnspan = max(self.col_size // 3, 1), sticky=E)
 
     def set_grid_colour(self, prob, row, col):
         grid = self.board[row][col]
@@ -628,7 +627,7 @@ class Minesweeper:
         modified_input = input.copy()
         modified_input[r][c]= value
         # return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,self.mines_amount,modified_input)
-        return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
+        return MZSolver.solve_minizinc_instance(self.row_size,self.col_size,self.row_size,self.col_size,modified_input)
 
         
     def hint_prob(self):
@@ -745,8 +744,7 @@ class Minesweeper:
                                     modified_input = input_grid.copy()
                                     rIndex, cIndex = self.adjust_indices(row, col, row_size, col_size, fullboard)
                                     modified_input[rIndex][cIndex] = -2 if type == "is_mine" else -5
-                                    path = "./model/constraint.mzn"
-                                    future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
+                                    future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, row_size, col_size, modified_input, True)
                                     tasks[future] = (row, col,type)
                                     if (row, col) not in results:
                                         results[(row, col)] = {'is_mine': None, 'not_mine': None}
