@@ -523,7 +523,7 @@ class Minesweeper:
                                 button.show_prob(1)
                             else:
                                 denominator = 1.0
-                                for i in range(1,9):
+                                for i in range(0,9):
                                     if self.can_be_x(input,row,col,i)==Status.SATISFIED:
                                         denominator = denominator+1.0
                                 prob = (1.0/denominator)*100
