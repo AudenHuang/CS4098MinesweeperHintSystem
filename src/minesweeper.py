@@ -34,7 +34,7 @@ class Minesweeper:
 
         self.frame = Frame(master)
         self.frame.pack(padx=20, pady=20)
-        
+
         # Keep track of amount of games played and winned.
         self.game_times = 0
         self.win_times = 0
@@ -42,6 +42,7 @@ class Minesweeper:
         # Default game setting is 16x16 with 40 mines.
         self.row_size = row_size
         self.col_size = col_size
+
         self.mines_amount = mines_amount
         self.remaining_mines = self.mines_amount
         self.flags = 0
@@ -84,63 +85,64 @@ class Minesweeper:
 
         # Initialize newgame button.
         self.newgame_button = Button(self.frame, image = self.img_sun_normal)
-        self.newgame_button.grid(row = 0, column = 0, columnspan = self.col_size)
+        self.newgame_button.grid(row = 0, column = 1, columnspan = self.col_size)
         self.newgame_button.bind("<Button-1>", lambda Button: self.newgame())
 
         # Initialize remaining mines labels.
         self.remain_label = Label(self.frame, text = "remainng mines: ")
-        self.remain_label.grid(row = self.row_size+1, column = 0, columnspan = 4, sticky=W)
+        self.remain_label.grid(row = self.row_size+2, column = 1, columnspan = 4, sticky=W)
         self.remain_label2 = Label(self.frame, text = self.mines_amount)
-        self.remain_label2.grid(row = self.row_size+1, column = 4, columnspan = self.row_size, sticky=W)
+        self.remain_label2.grid(row = self.row_size+2, column = 5, columnspan = self.row_size, sticky=W)
 
-
+        self.control_frame = Frame(self.frame)
+        self.control_frame.grid(row=self.row_size+7, column=self.col_size+2, padx=10, pady=10)
         # Initialize Hint  button.
-        base_row = self.row_size + 3  # Starting row for buttons below the game board
-        self.solvecomp_button = Button(self.frame, text="Hint_Solve_Iterative")
+        base_row = 0 # Starting row for buttons below the game board
+        self.solvecomp_button = Button(self.control_frame , text="Hint_Solve_Iterative")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
         self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.solvecomp_button.bind("<Button-1>", lambda Button: self.hint_solve())
 
-        self.solvecurrent_button = Button(self.frame, text="Hint_Solve_Current")
+        self.solvecurrent_button = Button(self.control_frame , text="Hint_Solve_Current")
         # self.solvecomp_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size, sticky=E)
-        self.solvecurrent_button.grid(row=base_row, column=max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.solvecurrent_button.grid(row=base_row+1, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.solvecurrent_button.bind("<Button-1>", lambda Button: self.hint_solve_current())
 
-        self.show_certain_button = Button(self.frame, text="Hint_Certain")
+        self.show_certain_button = Button(self.control_frame , text="Hint_Certain")
         # self.show_certain_button.grid(row = self.row_size+3,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.show_certain_button.grid(row=base_row, column=2*max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.show_certain_button.grid(row=base_row+2, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.show_certain_button.bind("<Button-1>", lambda Button: self.hint_show_certain())
 
-        self.showprob_button = Button(self.frame, text=" Show_Prob ")
+        self.showprob_button = Button(self.control_frame , text=" Show_Prob ")
         # self.showprob_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size, sticky=E)
-        self.showprob_button.grid(row=base_row+1, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_button.grid(row=base_row+3, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_button.bind("<Button-1>", lambda Button: self.hint_prob())
 
-        self.showprob_smart_button= Button(self.frame, text=" Show_Prob_Smart ")
+        self.showprob_smart_button= Button(self.control_frame , text=" Show_Prob_Smart ")
         # self.showprob_smart_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-5, sticky=E)
-        self.showprob_smart_button.grid(row=base_row + 1, column=max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_smart_button.grid(row=base_row + 4, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_smart_button.bind("<Button-1>", lambda Button: self.hint_prob_smart(7,7))
 
 
 
-        self.showprob_smart_test_button= Button(self.frame, text=" Test ")
+        self.showprob_smart_test_button= Button(self.control_frame , text=" Test ")
         # self.showprob_smart_test_button.grid(row = self.row_size+5,column = 0, columnspan = self.col_size-10, sticky=E)
-        self.showprob_smart_test_button.grid(row=base_row + 1, column=2*max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.showprob_smart_test_button.grid(row=base_row + 5, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_grid_click())
 
 
-        self.open_button = Button(self.frame, text="All_Certain")
+        self.open_button = Button(self.control_frame , text="All_Certain")
         self.open_button.bind("<Button-1>", lambda Button: self.open_mark_certain())
 
         
 
         # Create the scrollable text area
-        self.output_text = Text(self.frame, height=10, width=50)
-        self.output_text.grid(row=self.row_size+7, column=0, columnspan=self.col_size, sticky="nsew")
+        self.output_text = Text(self.frame , height=10, width=50)
+        self.output_text.grid(row=self.row_size+7, column=1, columnspan=self.col_size, sticky="nsew")
 
         # Create a Scrollbar and attach it to the text area
-        scrollbar = Scrollbar(self.frame, command=self.output_text.yview)
-        scrollbar.grid(row=self.row_size+7, column=self.col_size, sticky='nsew')
+        scrollbar = Scrollbar(self.frame , command=self.output_text.yview)
+        scrollbar.grid(row=self.row_size+7, column=self.col_size+1,sticky='nsew')
         self.output_text['yscrollcommand'] = scrollbar.set
         self.output_text.bind("<Key>", self.make_text_read_only)
         # Unmute if you want to enable the first click to be a mine
@@ -174,29 +176,40 @@ class Minesweeper:
         self.remain_label2.config(text=self.remaining_mines)
         self.newgame_button.config(image=self.img_sun_normal)
         base_row = self.row_size + 3  
-        self.solvecomp_button.grid(row=base_row, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.solvecurrent_button.grid(row=base_row, column=max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.show_certain_button.grid(row=base_row, column=2*max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.showprob_button.grid(row=base_row+1, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.showprob_smart_button.grid(row=base_row + 1, column=max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
-        self.showprob_smart_test_button.grid(row=base_row + 1, column=2*max(self.col_size // 3, 1), columnspan=max(self.col_size // 3, 1), sticky=W+E)
+        self.solvecomp_button.grid(row=base_row, column=0, sticky=W+E)
+        self.solvecurrent_button.grid(row=base_row+1, column=0, sticky=W+E)
+        self.show_certain_button.grid(row=base_row+2, column=0, sticky=W+E)
+        self.showprob_button.grid(row=base_row+3, column=0, sticky=W+E)
+        self.showprob_smart_button.grid(row=base_row + 4, column=0, sticky=W+E)
+        self.showprob_smart_test_button.grid(row=base_row + 5, column=0, sticky=W+E)
         # Unmute if you want to enable the first click to be a mine
         # self.init_random_mines()
 
     def init_board(self):
+
         '''Initialize game board with grids.
         The board is a list of lists, inner lists' elements are FieldButton object.
         [ [ ],
-          [ ],
-          ...]
+        [ ],
+        ...]
         '''
+
+        # Create labels for row indices
+        for row in range(self.row_size):
+            row_label = Label(self.frame, text=str(row))
+            row_label.grid(row=row+2, column=0, padx=(10, 0))
+
+        # Create labels for column indices
+        for col in range(self.col_size):
+            col_label = Label(self.frame, text=str(col))
+            col_label.grid(row=1, column=col+1, pady=(0, 10))
 
         for row in range(self.row_size):
             lis = []
             for col in range(self.col_size):
                 grid = FieldButton(col, row, self.frame, self.images)
                 # first row grid for new game button
-                grid.grid(row=row+1, column=col)
+                grid.grid(row=row+2, column=col+1)
                 lis.append(grid)
                 self.grids.append(grid)
             self.board.append(lis)
@@ -579,7 +592,7 @@ class Minesweeper:
                     self.prob[row][col] = -1
                     self.set_grid_colour(-1, row, col)
         if(safe+mine!=0):
-            self.open_button.grid(row = self.row_size+6,column = 2*max(self.col_size // 3, 1), columnspan = max(self.col_size // 3, 1), sticky=E)
+            self.open_button.grid(row = self.row_size+6,column = 0, columnspan = max(self.col_size // 3, 1), sticky=E)
 
     def set_grid_colour(self, prob, row, col):
         grid = self.board[row][col]
