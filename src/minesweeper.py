@@ -735,13 +735,15 @@ class Minesweeper:
                                     path = "./model/constraint.mzn"
                                     future = executor.submit(MZSolver.solve_minizinc_instance, path,self.row_size,self.col_size, row_size, col_size, modified_input, True)
                                     tasks[future] = (row, col,type)
+                                    if (row, col) not in results:
+                                        results[(row, col)] = {'is_mine': None, 'not_mine': None}
 
             print("Done Adding",len(tasks), "Tasks")
             for future in as_completed(tasks):
                 row, col, type = tasks[future]
                 num_solutions = future.result()
-                if (row, col) not in results:
-                    results[(row, col)] = {'is_mine': None, 'not_mine': None}
+                # if (row, col) not in results:
+                #     results[(row, col)] = {'is_mine': None, 'not_mine': None}
                 results[(row, col)][type] = num_solutions
                 print("one task done", num_solutions)
                 # Check if both futures for the cell are completed
@@ -762,7 +764,12 @@ class Minesweeper:
                     self.prob[row][col] = prob
                     self.output_data(file_path, prob, row, col)
                     #Update UI
-                    self.display_prob( prob, row, col)
+                    results[(row, col)] = prob
+                    # self.display_prob( prob, row, col)
+            for (row, col) in results:
+                prob = results[(row, col)]
+                print(prob)
+                self.display_prob( prob, row, col)
         print("samrt prob done")
     
     def on_show_prob_smart_grid_click(self):
