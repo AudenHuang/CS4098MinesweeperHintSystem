@@ -76,6 +76,9 @@ class FieldButton(Button):
     def show_prob(self, prob):
         if not self.is_visible:
             self.config(image = self.img_prob[prob])
+    
+    def reset_display(self):
+        self.config(image = self.img_blank)
 
     def is_flag(self):
         '''Return True if button is flagged; False otherwise.

@@ -6,7 +6,7 @@ data = pd.read_csv(file_path)
 data = data.sort_values(by='Probability')
 
 # Specific values you're interested in
-values = [11.11, 12.50, 14.29, 16.67, 20.00, 25.00, 33.33, 50.00]
+values = [10.00, 11.11, 12.50, 14.29, 16.67, 20.00, 25.00, 33.33, 50.00]
 # Convert to string for labeling purposes
 labels = [str(value) for value in values]
 
@@ -20,7 +20,7 @@ def categorize_probability(prob, values):
 data['Range'] = data['Probability'].apply(lambda x: categorize_probability(x, values))
 
 # Initialize the summary DataFrame
-summary = pd.DataFrame(columns=['Predicted Probability', 'Mine', 'Not Mine', 'Actual Probability'])
+summary = pd.DataFrame(columns=['Predicted Probability', 'Mine', 'Total', 'Actual Probability'])
 
 for value in labels:
     # Subset data for the current value
@@ -31,7 +31,7 @@ for value in labels:
     total_count = len(range_data)
     
     # Calculate actual probability
-    actual_prob = mine_count /  total_count if  total_count > 0 else 0
+    actual_prob = mine_count / total_count if  total_count > 0 else 0
     actual_prob = round(actual_prob * 100, 2)
 
     # Append to summary DataFrame
