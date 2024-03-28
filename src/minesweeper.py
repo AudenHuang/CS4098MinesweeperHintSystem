@@ -592,7 +592,7 @@ class Minesweeper:
                         if self.is_not_certain(row,col):
                             modified_input = input_grid.copy()
                             modified_input[row][col]= -2
-                            future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, modified_input, False)
+                            future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, modified_input)
                             is_mine_tasks[future] = (row, col, modified_input)
             for future in as_completed(is_mine_tasks):
                 row, col, grid_data = is_mine_tasks[future]
@@ -603,7 +603,7 @@ class Minesweeper:
                     self.set_grid_colour(0, row, col)
                 else:
                     grid_data[row][col] = -5
-                    future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, grid_data, False)
+                    future = executor.submit(MZSolver.solve_minizinc_instance,self.row_size,self.col_size, self.row_size, self.col_size, grid_data)
                     not_mine_tasks[future] = (row, col)
             for future in as_completed(not_mine_tasks):
                 row, col = not_mine_tasks[future]
