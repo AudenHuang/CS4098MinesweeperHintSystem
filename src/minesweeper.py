@@ -2,7 +2,6 @@ import math
 import os
 import sys
 from tkinter import *
-from tkinter import messagebox
 from DifficultyDialog import *
 from FieldButton import *
 from MZSolver import *
@@ -248,13 +247,14 @@ class Minesweeper:
                 self.mines.append(self.board[row][col])
                 self.update_surrounding_grids(row, col, 1)
                 mines -= 1
-            # self.board[0][0].value = 0
-            # self.board[0][1].value = 1
-            # self.board[1][0].value = 0
-            # self.board[1][1].value = 1
-            # self.board[2][0].value = 1
-            # self.board[2][1].value = 2
-            # self.board[2][2].value = 2
+            self.board[2][2].value = 8
+            # self.board[0][3].value = 0
+            # self.board[0][4].value = 0
+            # self.board[1][2].value = 8
+            # self.board[1][3].value = 1
+            # self.board[1][4].value = 0
+            # self.board[2][3].value = 1
+            # self.board[2][4].value = 0
 
         
 
@@ -422,7 +422,6 @@ class Minesweeper:
         :return: grid
         '''
         grids = []
-        # corners = [self.board[0][0], self.board[0][self.col_size-1],self.board[self.row_size-1][0],self.board[self.row_size-1][self.col_size-1]]
         for grid in self.grids:
             if not grid.is_show() and not grid.is_flag():
                 grids.append(grid)
@@ -435,11 +434,6 @@ class Minesweeper:
                 elif self.prob[grid.y][grid.x]<self.prob[lowest_prob_grids.y][lowest_prob_grids.x]:
                     lowest_prob_grids = grid
                 return lowest_prob_grids
-
-        # for grid in corners:
-        #     if not grid.is_show() and not grid.is_flag():
-        #         return grid
-            
         return random.choice(grids)
 
     def has_shown_neighbour(self,row,col):
@@ -544,31 +538,6 @@ class Minesweeper:
         self.hide_hints_button.grid_remove()
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
-        # self.check_certain_solve()
-        # self.open_mark_certain()
-        # for row in range(self.row_size):
-        #     for col in range(self.col_size):
-        #         # for debug
-        #         # print(self.has_shown_neighbour(row,col))
-        #         if self.unreveal_with_shown_neighbour(row,col):
-        #             if self.is_not_certain(row,col):
-        #                 input = self.createInput_full_board()
-        #                 input[row][col]=-2
-        #                 # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
-        #                 if instance.solve().status== Status.UNSATISFIABLE:
-        #                     self.lclicked(self.board[row][col]) 
-        #                 else:
-        #                     input[row][col]=-5
-        #                     # instance = self.createInstance("./model/constraint.mzn",row,col,self.mines_amount,input)
-        #                     if instance.solve().status== Status.UNSATISFIABLE:
-        #                         self.rclicked(self.board[row][col])
-        #                     else:
-        #                         self.set_grid_colour( -1, row, col)
-        #             else:
-        #                 if self.prob[row][col] == 0:
-        #                     self.lclicked(self.board[row][col]) 
-        #                 else:
-        #                     self.rclicked(self.board[row][col]) 
         flag,open = self.hint_solve_current()
         if(flag+open!=0):
             self.hint_solve()

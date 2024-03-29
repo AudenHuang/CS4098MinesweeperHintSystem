@@ -13,7 +13,6 @@ class MZSolver:
         instance["Max_Width"] = max_width
         instance["Height"] = height
         instance["Width"] = width
-        # instance["MineNum"] = mineNum
         instance["grid"] = grid_data
         if all_solutions:
             result = instance.solve()

@@ -45,30 +45,30 @@ constraint forall(i in 1..Height, j in  1..Width where grid[i, j] = -5) (
   outputgrid[i, j] in 0..8
 );
 
-%Setting minimum value
+%Setting minimum value (constraint 1)
 constraint forall(i in 1..Height, j in  1..Width where outputgrid[i,j]>=0)(
   countMines(i, j)<= outputgrid[i, j]
 );
 
 
-% Constraint for fullboard (Setting maximum value)
+% Constraint for fullboard (Setting maximum value)(constraint 2)
   constraint fullboard()->forall(i in 1..Height, j in  1..Width where outputgrid[i,j]>=0) (
    countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
   );
 
 % Constraints for not fullboard input (Setting maximum value)
-  % None border grids
+  % None border grids(constraint 3)
   constraint not fullboard()->forall(i in 2..Height-1, j in 2..Width-1 where outputgrid[i,j]>=0)(
     countMines(i, j) +countN3(i,j)>= outputgrid[i, j]
   );
 
-  % Constraints for the corners
+  % Constraints for the corners (constraint 4)
   constraint not fullboard()/\outputgrid[1, 1] >= 0->(countMines(1, 1) +countN3(1,1)+ 5 >=outputgrid[1, 1]);
   constraint not fullboard()/\outputgrid[Height, 1] >= 0->(countMines(Height, 1) +countN3(Height,1)+ 5 >=outputgrid[Height, 1]);
   constraint not fullboard()/\outputgrid[1, Width] >= 0->(countMines(1, Width) +countN3(1,Width)+ 5 >=outputgrid[1, Width]);
   constraint not fullboard()/\outputgrid[Height, Width] >= 0->(countMines(Height, Width) +countN3(Height,Width)+ 5 >=outputgrid[Height, Width]);
 
-  % Constrants for non corners border case
+  % Constrants for non corners border case (constraint 5)
   constraint not fullboard()->forall(i in 2..Height-1, j in {1,Width} where outputgrid[i, j] >= 0) (
     countMines(i, j) +countN3(i,j)+ 3 >=outputgrid[i, j]
   );
