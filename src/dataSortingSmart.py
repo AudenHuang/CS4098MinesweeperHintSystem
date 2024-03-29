@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the CSV data
-file_path = '../../test/smart_output.csv'
+file_path = '../../data/smart_output.csv'
 data = pd.read_csv(file_path)
 data = data.sort_values(by='Probability')
 # Define the bins and labels for categorization

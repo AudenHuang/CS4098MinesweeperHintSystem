@@ -28,9 +28,15 @@ class Minesweeper:
         the grid i,j of the game board. (by default indexed from (0,0) to (10,10))
 
     '''
-
+    
     def __init__(self, master, row_size, col_size, mines_amount):
+        '''Initializes the Minesweeper game with a specified size and number of mines.
 
+            :param master: Tkinter widget or the main window object
+            :param row_size: Number of rows in the minesweeper grid
+            :param col_size: Number of columns in the minesweeper grid
+            :param mines_amount: Total number of mines to be placed on the grid
+        '''
         self.frame = Frame(master)
         self.frame.pack(padx=20, pady=20)
         self.dataflag = False
@@ -49,10 +55,9 @@ class Minesweeper:
         self.mines = []
         self.board = []
     
-
         self.current_board = np.full((self.row_size, self.col_size), -1)
         self.prob = np.full((self.row_size, self.col_size), -1)
-        
+        #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
         self.first_click = True
         self.first_click_grid = None        
         # Initialize images for newgame grids.
@@ -71,6 +76,7 @@ class Minesweeper:
         self.images['wrong'] = PhotoImage(file = "images/img_wrong_mine.gif")
         self.images['no'] = []
         self.images['prob'] = []
+        #--------------------------------- modified plus my own code -----------------
         for i in range(0, 12):
             self.images['prob'].append(PhotoImage(file = "images/img_prob_"+str(i)+".gif"))
             if i< 9:
@@ -118,7 +124,7 @@ class Minesweeper:
         self.showprob_smart_button.bind("<Button-1>", lambda Button: self.hint_prob_smart(7,7))
 
 
-
+        #For testing different dimention of the smart prob solver
         # self.showprob_smart_test_button= Button(self.control_frame , text=" Test ")
         # self.showprob_smart_test_button.grid(row=5, column=0, columnspan=max(self.col_size // 3, 1), sticky=W+E)
         # self.showprob_smart_test_button.bind("<Button-1>", lambda Button: self.on_show_prob_smart_grid_click())
@@ -145,15 +151,14 @@ class Minesweeper:
         # self.init_random_mines()
 
     def make_text_read_only(self, event):
+        '''Prevents user from typing in the output text area, making it read-only.
+        
+        :param event: The event that triggers this function
+        '''
         return "break"
 
     def newgame(self):
-        '''Initialize all attributes for new game.
-
-        :param row_size: int
-        :param col_size: int
-        :param mines_amount: int
-        '''
+        '''Sets up the board for a new game, resetting all relevant game state variables.'''
         self.win = 0
         # self.game_times += 1
         # self.init_board()
@@ -185,6 +190,7 @@ class Minesweeper:
         # Unmute if you want to enable the first click to be a mine
         # self.init_random_mines()
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def init_board(self):
 
         '''Initialize game board with grids.
@@ -218,6 +224,7 @@ class Minesweeper:
             grid.bind('<Button-1>', self.lclicked_wrapper(grid))
             grid.bind('<Button-2>', self.rclicked_wrapper(grid))
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def init_random_mines(self):
         '''Initialize mines randomly.
         '''
@@ -247,21 +254,17 @@ class Minesweeper:
                 self.mines.append(self.board[row][col])
                 self.update_surrounding_grids(row, col, 1)
                 mines -= 1
-            self.board[2][2].value = 8
-            # self.board[0][3].value = 0
-            # self.board[0][4].value = 0
-            # self.board[1][2].value = 8
-            # self.board[1][3].value = 1
-            # self.board[1][4].value = 0
-            # self.board[2][3].value = 1
-            # self.board[2][4].value = 0
 
         
-
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def get_adjecent_grids(self, row, col, r_size, c_size,input):
         '''Return a list of surrounding grids of grid at row and col in board.
+
         :param row: int
         :param col: int
+        :param r_size: int
+        :param c_size: int
+        :param input: a 2D array
         :return: list of grids
         '''
 
@@ -280,6 +283,7 @@ class Minesweeper:
                 neighbours.append(input[temp_row][temp_col])
         return neighbours
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def update_surrounding_grids(self, row, col, value):
         '''Update surrounding grids' value adding given value.
 
@@ -292,14 +296,26 @@ class Minesweeper:
             if not cell.is_mine():
                 cell.value += value
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def lclicked_wrapper(self, grid):
+        '''Returns a lambda function that calls `lclicked` with the specified grid. Useful for binding events.
+        
+        :param grid: The grid cell (FieldButton) to be passed to the `lclicked` method
+        '''
         return lambda Button: self.lclicked(grid)
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def rclicked_wrapper(self, grid):
+        '''Returns a lambda function that calls `rclicked` with the specified grid. Useful for binding events.
+        
+        :param grid: The grid cell (FieldButton) to be passed to the `rclicked` method
+        '''
         return lambda Button: self.rclicked(grid)
 
+    
     def lclicked(self, grid):
-        '''Left click action on given grid.
+        '''Handles left mouse button clicks on a grid cell, revealing the cell or triggering game over.
+        :param grid: The grid cell (FieldButton) that was clicked
         '''
         # Mute if you want to enable the first click to be a mine
         if self.first_click == True:
@@ -343,8 +359,10 @@ class Minesweeper:
             self.dataflag = True
             self.gameover()
 
+    #K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
     def rclicked(self, grid):
-        '''Right click action on given grid.
+        '''Handles right mouse button clicks on a grid cell, toggling a flag on the cell.
+        :param grid: The grid cell (FieldButton) that was clicked
         '''
                     
         # Do nothing if it's visible.
@@ -393,7 +411,7 @@ class Minesweeper:
         if(not self.win or self.dataflag):
             if self.win:
                 self.dataflag = False
-            file_path = '../../test/winrate'+diffculty+'.csv'
+            file_path = '../../data/winrate'+diffculty+'.csv'
             self.output_data_winrate(file_path, self.win)
 
     def is_win(self):
@@ -417,6 +435,8 @@ class Minesweeper:
 
         return True
 
+    
+    # use for faster testing
     def guess_move(self):
         '''Return an unclick grid.
         :return: grid
@@ -437,16 +457,25 @@ class Minesweeper:
         return random.choice(grids)
 
     def has_shown_neighbour(self,row,col):
-        '''Patameter: row's and colum's number of a grid
-        Function: check if any of the adjecent grids is shown
-        Return: True if there is a shown neighbor and False if there isn't
+        '''Checks if a given grid has any revealed neighboring grids.
+        
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        :return: True if there is at least one revealed neighbor, False otherwise
         '''
         adjecent_grids = self.get_adjecent_grids(row,col,self.row_size,self.col_size,self.board)
         for grid in adjecent_grids:
             if grid.is_show():
                 return True
         return False
+    
     def has_unshown_neighbour(self, row ,col):
+        '''Checks if a given grid has any unrevealed neighboring grids.
+        
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        :return: True if there is at least one unrevealed neighbor, False otherwise
+        '''
         adjecent_grids = self.get_adjecent_grids(row,col,self.row_size,self.col_size,self.board)
         for grid in adjecent_grids:
             if self.current_board[grid.y][grid.x]== -1:
@@ -454,9 +483,14 @@ class Minesweeper:
         return False
     
     def has_shown_neighbour_input(self,mInput,r,c,row_size,col_size):
-        '''Patameter: a 2d array, row's and colum's number of a grid in the given array
-        Function: check if any of the adjecent grids in the 2d array is shown
-        Return: True if there is a shown neighbor and False if there isn't
+        '''Checks in a given 2D array if a specific cell has any "shown" neighboring cells based on certain criteria.
+        
+        :param mInput: The 2D array representing part or all of the current board state
+        :param r: Row index of the cell to check
+        :param c: Column index of the cell to check
+        :param row_size: Number of rows in the input array
+        :param col_size: Number of columns in the input array
+        :return: True if there is at least one "shown" neighbor, False otherwise
         '''
         adjecent_grids  = self.get_adjecent_grids(r,c,row_size,col_size,mInput)
         for grid in adjecent_grids:
@@ -464,7 +498,39 @@ class Minesweeper:
                 return True
         return False
     
+    def unreveal_with_shown_neighbour(self, row, col):
+         '''Checks if an unrevealed grid has at least one revealed neighbor.
+        
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        :return: True if the grid has at least one revealed neighbor, False otherwise
+        '''
+         if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
+             return True
+         return False
+    
+    def is_not_certain(self, row, col):
+        '''Determines if a grid at a given location has an uncertain status regarding being a mine or not.
+        
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        :return: True if the status of the grid being a mine is uncertain, False if certain
+        '''
+        if self.prob[row][col] == 100:
+            return False
+        if self.prob[row][col] == 0:
+            return False
+        return True
+    
     def createInput_partial_board(self, row, col, slice_rows=7, slice_cols=7):
+        '''Creates a sliced view of the current board centered around a specific grid for solving a smaller section.
+        
+        :param row: Row index of the center grid
+        :param col: Column index of the center grid
+        :param slice_rows: Number of rows in the sliced section
+        :param slice_cols: Number of columns in the sliced section
+        :return: A 2D numpy array representing the sliced section of the board
+        '''
         # Ensure the slice size does not exceed the board dimensions
         slice_rows = min(slice_rows, self.row_size)
         slice_cols = min(slice_cols, self.col_size)
@@ -499,14 +565,12 @@ class Minesweeper:
                         input[i][j] = -3
         return input
 
-    def is_not_certain(self, row, col):
-        if self.prob[row][col] == 100:
-            return False
-        if self.prob[row][col] == 0:
-            return False
-        return True
     
     def createInput_full_board(self):
+        '''Creates a full copy of the current board state for solving the entire board.
+        
+        :return: A 2D numpy array representing the full board state
+        '''
         input = self.current_board.copy()
         for i in range(self.row_size):
             for j in range(self.col_size):
@@ -516,6 +580,10 @@ class Minesweeper:
         return input
     
     def hint_solve_current(self):
+        '''Solves the current board using hints, making certain moves based on the current probabilities.
+        
+        :return: A tuple containing the number of flags placed and the number of grids opened
+        '''
         self.hintCertain = False
         self.output_text.delete('1.0', END)
         self.open_button.grid_remove()
@@ -545,6 +613,9 @@ class Minesweeper:
             print("Iterative solve done")
             
     def hint_show_certain(self):
+        '''Highlights certain moves based on the current board state without making the moves.
+        (Deterministic Algorithm)
+        '''
         self.hide_hints_button.grid_remove()
         self.showprob_button.config(text="Show_Prob")
         self.showprob_smart_button.config(text="Show_Prob_Smart")
@@ -591,6 +662,12 @@ class Minesweeper:
                     self.hide_hints_button.grid(row=self.base_row + 6, column=0, sticky=W+E)
 
     def set_grid_colour(self, prob, row, col):
+        '''Sets the display color of a grid based on the probability of it being a mine.
+        
+        :param prob: The probability (0-100)% of the grid being a mine
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        '''
         grid = self.board[row][col]
         if prob ==100:
             grid.show_prob(11)
@@ -618,6 +695,7 @@ class Minesweeper:
             grid.show_prob(0)
 
     def hide_hints(self):
+        '''Hides any currently displayed hints on the board, resetting the display of grids with probabilities.'''
         b = self.createInput_full_board()
         for row in range(self.row_size):
             for col in range(self.col_size):
@@ -629,6 +707,14 @@ class Minesweeper:
         
 
     def can_be_x(self, r,c, input,value):
+        '''Determines if setting a specific grid to a given value is consistent with the rules of Minesweeper.
+        
+        :param r: Row index of the grid
+        :param c: Column index of the grid
+        :param input: The current board state as a 2D array
+        :param value: The value to test setting the grid to
+        :return: The result of solving the Minesweeper constraint problem with the modified grid
+        '''
         modified_input = input.copy()
         modified_input[r][c]= value
         # return MZSolver.solve_minizinc_instance("./model/constraint.mzn",self.row_size,self.col_size,self.row_size,self.col_size,self.mines_amount,modified_input)
@@ -636,6 +722,8 @@ class Minesweeper:
 
         
     def hint_prob(self):
+        '''Calculates and displays the probability of each target grid being a mine based on the current board state.
+        (probability appraoch 1)'''
         self.hintCertain = False
         self.output_text.delete('1.0', END)
         self.showprob_smart_button.config(text="Show_Prob_Smart")
@@ -656,24 +744,32 @@ class Minesweeper:
                         self.prob[row][col] = prob
                         prob = round(prob, 2)
                         self.display_prob(prob, row, col)
-                        file_path = '../../test/output.csv'
+                        file_path = '../../data/output.csv'
                         self.output_data(file_path, prob, row, col)
         self.hide_hints_button.grid(row=self.base_row + 6, column=0, sticky=W+E)          
         print('done')
 
     def display_prob(self, prob, row, col):
+        '''Updates the UI to display the probability of a grid being a mine.
+        
+        :param prob: The probability (0-100) of the grid being a mine
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        '''
         self.set_grid_colour(prob, row,col)
         # messagebox.showinfo("Probability", f"Probability of grid ({row+1}, {col+1}) being a mine: {self.prob[row][col]}%")
         message = f"Probability of grid ({row}, {col}) being a mine: {prob}%\n"
         self.output_text.insert(END, message)
         # Auto-scroll to the bottom
         self.output_text.see(END)
-    def unreveal_with_shown_neighbour(self, row, col):
-         if self.current_board[row][col]== -1 and self.has_shown_neighbour(row,col):
-             return True
-         return False
     
     def is_border(self,row,col):
+        '''Determines if a revealed grid is on the border of the discovered area with at least one unrevealed neighbor.
+        
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        :return: True if the grid is a border grid, False otherwise
+        '''
         grid = self.board[row][col]
         if grid.is_show():
             if self.has_unshown_neighbour(row,col):
@@ -681,6 +777,7 @@ class Minesweeper:
         return False
 
     def check_certain_solve(self):
+        '''Checks the board for any certain moves based on current visible grids and performs those moves.'''
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.is_border(row,col):
@@ -701,6 +798,7 @@ class Minesweeper:
                             self.lclicked(grid) 
 
     def check_certain_prob(self):
+        '''Checks the board for any grids that can be determined as certainly a mine or certainly not a mine based on probability and updates their display.'''
         for row in range(self.row_size):
             for col in range(self.col_size):
                 if self.is_border(row,col):
@@ -723,8 +821,17 @@ class Minesweeper:
                             if(not self.prob[grid.y][grid.x] == 0):
                                 self.prob[grid.y][grid.x] = 0
                                 self.set_grid_colour(0, grid.y,grid.x)  
-                                              
+    # Only for testing                                       
     def adjust_indices(self, row, col, row_size, col_size, fullboard):
+        '''Adjusts indices for accessing a partial or full board based on specified dimensions.
+        
+        :param row: Original row index
+        :param col: Original column index
+        :param row_size: Number of rows in the board or section
+        :param col_size: Number of columns in the board or section
+        :param fullboard: Boolean indicating if the full board is being used
+        :return: Adjusted row and column indices
+        '''
         if not fullboard:
             rIndex = math.ceil(row_size / 2) - 1 if row_size % 2 != 0 else row_size / 2
             cIndex = math.ceil(col_size / 2) - 1 if col_size % 2 != 0 else col_size / 2
@@ -732,6 +839,12 @@ class Minesweeper:
         return row, col
 
     def hint_prob_smart(self, row_size, col_size):
+        '''Calculates and displays probabilities of being a mine for each unrevealed grid using a smarter, more computational approach
+        (proabability approach 2).
+        
+        :param row_size: Number of rows to consider in the calculation (can be less than the full board size)
+        :param col_size: Number of columns to consider in the calculation (can be less than the full board size)
+        '''
         self.hintCertain = False
         self.output_text.delete('1.0', END)
         self.showprob_button.config(text="Show_Prob")
@@ -780,9 +893,9 @@ class Minesweeper:
                         else:
                             filename = '_'+str(row_size) +'_by_'+str(col_size)
                     
-                    # file_path = '../../test/smart_output'+filename+'.csv'
+                    file_path = '../../data/smart_output'+filename+'.csv'
                     self.prob[row][col] = prob
-                    # self.output_data(file_path, prob, row, col)
+                    self.output_data(file_path, prob, row, col)
                     #Update UI
                     results[(row, col)] = prob
                     # self.display_prob( prob, row, col)
@@ -794,6 +907,7 @@ class Minesweeper:
 
     #only for testing
     def on_show_prob_smart_grid_click(self):
+        '''Handles the event when the "Test" button is clicked, allowing the user to specify the size of the board section for probability calculations approach 2.'''
         popup = BoardSizePopup(self.frame)
         popup.grab_set()
         self.frame.wait_window(popup)  # Wait for the popup to close
@@ -817,6 +931,13 @@ class Minesweeper:
                 print("Invalid input for row size or column size")
 
     def output_data(self, file_path, prob, row,col):
+        '''Outputs calculated probabilities and their corresponding grid statuses to a CSV file.
+        
+        :param file_path: Path to the CSV file
+        :param prob: Probability of the grid being a mine
+        :param row: Row index of the grid
+        :param col: Column index of the grid
+        '''
         grid = self.board[row][col]
         if grid.value == -1:
             is_mine = 1
@@ -835,7 +956,11 @@ class Minesweeper:
                 writer.writerow([prob, is_mine])
 
     def output_data_winrate(self, file_path, won):
-
+        '''Outputs game win/lose data to a CSV file for statistical analysis.
+        
+        :param file_path: Path to the CSV file
+        :param won: Indicates whether the game was won (1) or lost (0)
+        '''
         if os.path.exists(file_path):
             # Append data to existing CSV file
             with open(file_path, mode='a', newline='') as file:
@@ -849,6 +974,7 @@ class Minesweeper:
                 writer.writerow([won])         
 
     def open_mark_certain(self):
+        '''Automatically flags or opens cells that are determined to be certain based on the current probabilities.'''
         flag = 0
         open = 0
         for row in range(self.row_size):

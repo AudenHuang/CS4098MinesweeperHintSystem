@@ -1,7 +1,13 @@
 import tkinter as tk
 from tkinter import simpledialog
 
+# Only for testing
 class BoardSizePopup(tk.Toplevel):
+    '''
+        Initializes the popup window for selecting board size for the input.
+        
+        :param parent: The parent Tkinter widget (often the main application window).
+        '''
     def __init__(self, parent):
         super().__init__(parent)
         
@@ -35,6 +41,11 @@ class BoardSizePopup(tk.Toplevel):
             self.popup = None  # Reset the popup variable
 
     def update_entries(self, *args):
+        '''
+        Enables or disables the row and column size entry fields based on the board selection.
+        
+        :param args: Additional arguments, not used but required by the trace callback signature.
+        '''
         if self.var.get() == "partial":
             self.row_entry.config(state='normal')
             self.col_entry.config(state='normal')
@@ -43,8 +54,17 @@ class BoardSizePopup(tk.Toplevel):
             self.col_entry.config(state='disabled')
 
     def on_ok(self):
+        '''
+        Defines actions to perform when the OK button is clicked. 
+        Here, it simply closes the popup, but you can extend it to include validation or other actions.
+        '''
         # Perform validation if necessary
         self.destroy()  # Close the popup
     
     def get_values(self):
+        '''
+        Retrieves the current values of the board selection, row size, and column size.
+        
+        :return: A tuple containing the board selection ('entire' or 'partial'), row size, and column size.
+        '''
         return self.var.get(), self.row_size.get(), self.col_size.get()
