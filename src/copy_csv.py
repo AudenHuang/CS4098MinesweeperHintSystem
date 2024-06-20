@@ -9,7 +9,8 @@ def copy_csv(input_file, output_file):
             writer.writerow(row)
 
 if __name__ == "__main__":
-    input_file = '../../test/data.csv'
-    output_file = '../../test/smart_output.csv'
+    input_file = '../../data/data.csv'
+    fileName ='winrate_Expert.csv'
+    output_file = '../../data/'+fileName
     copy_csv(input_file, output_file)
-    print("Data copied successfully from 'data.csv' to 'smart_output.csv'")
+    print("Data copied successfully from 'data.csv' to "+fileName )

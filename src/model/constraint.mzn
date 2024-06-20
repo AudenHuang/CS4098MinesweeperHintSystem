@@ -35,14 +35,15 @@ constraint forall(i in 1..Height, j in  1..Width where grid[i, j] != -1/\ grid[i
   outputgrid[i, j] = grid[i,j]
 );
 
-% Make sure that unreveale blocked are assigned with a valid solution
-constraint forall(i in 1..Height, j in  1..Width where grid[i, j] = -1) (
-  outputgrid[i, j] in valid_unrevealed
-);
 
 % Make sure that unrevealed safe grid are set to a valid safe grid value (for checking if the target grid can be a safe zone)
 constraint forall(i in 1..Height, j in  1..Width where grid[i, j] = -5) (
   outputgrid[i, j] in 0..8
+);
+
+% Make sure that unreveale blocked are assigned with a valid solution
+constraint forall(i in 1..Height, j in  1..Width where grid[i, j] = -1) (
+  outputgrid[i, j] in valid_unrevealed
 );
 
 %Setting minimum value (constraint 1)
