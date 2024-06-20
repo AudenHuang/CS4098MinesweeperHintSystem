@@ -497,7 +497,6 @@ class Minesweeper:
             if grid >=0:
                 return True
         return False
-    
     def unreveal_with_shown_neighbour(self, row, col):
          '''Checks if an unrevealed grid has at least one revealed neighbor.
         
