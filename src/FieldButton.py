@@ -1,6 +1,6 @@
 from tkinter import *
 
-
+#K. Brünnler, "Minesweeper-CSP-Solver," GitHub Repository, 2020. [Online]. Available: https://github.com/kqb/Minesweeper-CSP-Solver
 class FieldButton(Button):
     '''FieldButton Class:
        This is a class extend Button.
@@ -73,9 +73,6 @@ class FieldButton(Button):
             else:
                 self.config(image = self.img_flag)
             self.is_flagged = not self.is_flagged
-    def show_prob(self, prob):
-        if not self.is_visible:
-            self.config(image = self.img_prob[prob])
 
     def is_flag(self):
         '''Return True if button is flagged; False otherwise.
@@ -148,6 +145,20 @@ class FieldButton(Button):
         '''Set button to blank.
         '''
 
+        self.config(image = self.img_blank)
+
+#--------------------- My Own code ---------------------------
+    def show_prob(self, prob):
+        '''Set the display image for the grid to image that represent its probability
+
+        :param prob: the calculate probability of the grid being a mine 
+        '''
+        if not self.is_visible:
+            self.config(image = self.img_prob[prob])
+    
+    def reset_display(self):
+        '''Reset the display image for the grid to blank (Hide Hints)
+        '''
         self.config(image = self.img_blank)
 
 
